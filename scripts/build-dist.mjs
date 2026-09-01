@@ -16,6 +16,7 @@ const files = [
   'favicon.svg',
   'favicon.png',
   'favicon.ico',
+  'CNAME',
 ];
 
 const dirs = ['css', 'js'];
