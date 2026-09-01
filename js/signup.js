@@ -7,8 +7,10 @@ import {
 } from './auth.js';
 import { initAnalytics } from './firebase-config.js';
 import { isDesktopAuthFlow, completeDesktopHandoff } from './desktop-auth.js';
+import { ensureWebAuthUrl } from './auth-source.js';
 
 initAnalytics();
+ensureWebAuthUrl();
 
 const form = document.getElementById('signup-form');
 const alertEl = document.getElementById('auth-alert');

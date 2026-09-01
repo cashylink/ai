@@ -8,8 +8,10 @@ import {
 } from './auth.js';
 import { initAnalytics } from './firebase-config.js';
 import { isDesktopAuthFlow, completeDesktopHandoff } from './desktop-auth.js';
+import { AUTH_SOURCE, ensureWebAuthUrl, getAuthSource } from './auth-source.js';
 
 initAnalytics();
+ensureWebAuthUrl();
 
 const form = document.getElementById('login-form');
 const alertEl = document.getElementById('auth-alert');
@@ -20,6 +22,8 @@ const desktopFlow = isDesktopAuthFlow();
 
 if (desktopFlow) {
   document.title = 'تسجيل الدخول — LOQUIRA Desktop';
+} else if (getAuthSource() === AUTH_SOURCE.WEB) {
+  document.title = 'Sign in — LOQUIRA';
 }
 
 watchAuth(async function (user) {

@@ -1,18 +1,20 @@
 /**
  * Desktop app sign-in handoff (LOQUIRA ↔ loquira.ai).
- * When login.html is opened with ?client=desktop&state=...&agentPort=...,
- * after Firebase auth completes we POST tokens to the local agent server.
+ * Only active when AUTH_SOURCE is DESKTOP (login opened from LOQUIRA app).
  */
+
+import { AUTH_SOURCE, getAuthSource } from './auth-source.js';
 
 const DESKTOP_DEEP_LINK = 'forge-ai://forge-ai.forge-ai/auth-callback';
 
 let handoffCompleted = false;
 
 export function getDesktopAuthParams() {
+  if (getAuthSource() !== AUTH_SOURCE.DESKTOP) {
+    return null;
+  }
   const params = new URLSearchParams(window.location.search);
-  if (params.get('client') !== 'desktop') return null;
   const state = (params.get('state') || '').trim();
-  if (!state) return null;
   const agentPort = parseInt(params.get('agentPort') || '37845', 10);
   return {
     state,
@@ -21,7 +23,7 @@ export function getDesktopAuthParams() {
 }
 
 export function isDesktopAuthFlow() {
-  return getDesktopAuthParams() !== null;
+  return getAuthSource() === AUTH_SOURCE.DESKTOP;
 }
 
 /**
