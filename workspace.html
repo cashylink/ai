@@ -185,7 +185,7 @@
         <!-- Models -->
         <section id="view-models" class="dash-view" aria-labelledby="models-heading">
           <h1 class="dash-page-title" id="models-heading">Models</h1>
-          <p style="color:var(--dash-text-secondary);font-size:0.875rem;margin-bottom:1.5rem;">LOQUIRA models synced from the desktop app catalog. Availability depends on your provider settings.</p>
+          <p style="color:var(--dash-text-secondary);font-size:0.875rem;margin-bottom:1.5rem;">AI models available in LOQUIRA. Select any model in the desktop app.</p>
           <div id="models-container"></div>
         </section>
 
@@ -234,27 +234,6 @@
       <p id="workspace-notice-text">Open this project in the LOQUIRA desktop workspace when connected.</p>
       <div class="dash-modal-actions">
         <button type="button" class="dash-btn-primary" id="workspace-notice-close">Got it</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Provider status modal -->
-  <div id="provider-modal" class="dash-overlay" role="dialog" aria-modal="true" aria-labelledby="provider-modal-title" hidden>
-    <div class="dash-modal">
-      <h2 id="provider-modal-title">Configure provider</h2>
-      <p id="provider-modal-desc">Set the connection status for this provider. API keys are configured in the LOQUIRA app.</p>
-      <div id="provider-modal-alert" class="dash-alert error" role="alert"></div>
-      <div class="dash-form-group">
-        <label for="provider-status">Status</label>
-        <select class="dash-form-select" id="provider-status">
-          <option value="not-configured">Not configured</option>
-          <option value="connected">Connected</option>
-          <option value="invalid">Invalid</option>
-        </select>
-      </div>
-      <div class="dash-modal-actions">
-        <button type="button" class="dash-btn-secondary" id="provider-modal-cancel">Cancel</button>
-        <button type="button" class="dash-btn-primary" id="provider-modal-save">Save</button>
       </div>
     </div>
   </div>

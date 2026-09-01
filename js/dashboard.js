@@ -5,14 +5,11 @@ import {
   createProject,
   touchProject,
   fetchAgentActivity,
-  fetchUserSettings,
-  saveProviderSetting,
   ensureLoquiraModels,
-  syncLoquiraModels,
   formatRelativeTime,
   getProjectTypeLabel,
 } from './dashboard-store.js';
-import { LOQUIRA_PROVIDERS, groupModels } from './loquira-models.js';
+import { groupModels } from './loquira-models.js';
 
 initAnalytics();
 
@@ -25,21 +22,15 @@ const VIEW_TITLES = {
   settings: 'Settings',
 };
 
-const PROVIDERS = LOQUIRA_PROVIDERS;
-
 let currentUser = null;
 let dashboardData = {
   projects: [],
   agents: [],
-  settings: {},
   models: [],
   projectsState: 'loading',
   agentsState: 'loading',
-  settingsState: 'loading',
   modelsState: 'loading',
 };
-
-let pendingProviderId = null;
 
 const loadingEl = document.getElementById('dash-loading');
 const appEl = document.getElementById('dash-app');
@@ -56,10 +47,6 @@ const modalCancel = document.getElementById('modal-cancel');
 const modalAlert = document.getElementById('modal-alert');
 const modalSubmit = document.getElementById('modal-submit');
 const newProjectHeaderBtn = document.getElementById('new-project-header-btn');
-const providerModal = document.getElementById('provider-modal');
-const providerStatusSelect = document.getElementById('provider-status');
-const providerModalAlert = document.getElementById('provider-modal-alert');
-const providerModalTitle = document.getElementById('provider-modal-title');
 
 function escapeHtml(str) {
   const div = document.createElement('div');
@@ -163,24 +150,6 @@ function closeProjectModal() {
   projectForm.reset();
   modalSubmit.disabled = false;
   modalSubmit.textContent = 'Create project';
-}
-
-function openProviderModal(providerId) {
-  const provider = PROVIDERS.find(function (p) { return p.id === providerId; });
-  if (!provider) return;
-
-  pendingProviderId = providerId;
-  providerModalTitle.textContent = 'Configure ' + provider.name;
-  providerStatusSelect.value = dashboardData.settings[providerId]?.status || 'not-configured';
-  providerModalAlert.classList.remove('visible');
-  providerModal.hidden = false;
-  providerModal.classList.add('open');
-}
-
-function closeProviderModal() {
-  providerModal.classList.remove('open');
-  providerModal.hidden = true;
-  pendingProviderId = null;
 }
 
 function renderSkeleton(count) {
@@ -337,41 +306,24 @@ function updateStats() {
   statsRow.hidden = visibleCount === 0;
 }
 
-function getConfiguredModels(settings) {
-  if (Array.isArray(dashboardData.models) && dashboardData.models.length > 0) {
-    return dashboardData.models.filter(function (m) {
-      return m.available;
-    });
-  }
-  return [];
-}
-
 function renderModelCard(model) {
   const caps = Array.isArray(model.capabilities) ? model.capabilities.join(' · ') : '';
-  const statusClass = model.available ? 'available' : 'unavailable';
-  const statusLabel = model.available ? 'Available' : 'Unavailable';
 
   return (
-    '<div class="dash-model-card' + (model.available ? '' : ' dash-model-card--muted') + '">' +
-      '<div class="dash-model-card-head">' +
-        '<h3>' + escapeHtml(model.name) + '</h3>' +
-        '<span class="dash-model-status ' + statusClass + '">' + statusLabel + '</span>' +
-      '</div>' +
+    '<div class="dash-model-card">' +
+      '<h3>' + escapeHtml(model.name) + '</h3>' +
       '<p class="dash-model-meta">' +
-        escapeHtml(model.providerLabel) +
+        escapeHtml(model.group) +
         (caps ? ' · ' + escapeHtml(caps) : '') +
       '</p>' +
       (model.detail ? '<p class="dash-model-detail">' + escapeHtml(model.detail) + '</p>' : '') +
-      (!model.available && model.availabilityReason
-        ? '<p class="dash-model-hint">' + escapeHtml(model.availabilityReason) + '</p>'
-        : '') +
     '</div>'
   );
 }
 
 function renderModelsView() {
   const container = document.getElementById('models-container');
-  if (dashboardData.modelsState === 'loading' || dashboardData.settingsState === 'loading') {
+  if (dashboardData.modelsState === 'loading') {
     container.innerHTML = renderSkeleton(3);
     return;
   }
@@ -379,21 +331,20 @@ function renderModelsView() {
   const models = dashboardData.models;
   if (!models || models.length === 0) {
     container.innerHTML = renderEmptyState(
-      'No models synced',
-      'LOQUIRA models will appear here after your account syncs with Firebase.',
-      'Go to Settings',
-      'go-settings'
+      'No models available',
+      'LOQUIRA models will appear here shortly.',
+      null,
+      null
     );
     return;
   }
 
   const grouped = groupModels(models);
-  const availableCount = models.filter(function (m) { return m.available; }).length;
 
   let html =
     '<div class="dash-models-summary">' +
-      '<span>' + availableCount + ' of ' + models.length + ' models available</span>' +
-      '<span class="dash-models-summary-hint">Same catalog as the LOQUIRA desktop app</span>' +
+      '<span>' + models.length + ' models</span>' +
+      '<span class="dash-models-summary-hint">Select a model in the LOQUIRA desktop app</span>' +
     '</div>';
 
   grouped.forEach(function (section) {
@@ -435,23 +386,6 @@ function renderSettingsView() {
   const container = document.getElementById('settings-container');
   if (!currentUser) return;
 
-  let providersHtml = '';
-  PROVIDERS.forEach(function (p) {
-    const s = dashboardData.settings[p.id];
-    const status = s?.status || 'not-configured';
-    const statusLabel = status === 'connected' ? 'Connected' : status === 'invalid' ? 'Invalid' : 'Not configured';
-    const statusClass = status === 'connected' ? 'connected' : status === 'invalid' ? 'invalid' : 'not-configured';
-
-    providersHtml +=
-      '<div class="dash-settings-row">' +
-        '<div><label>' + escapeHtml(p.name) + '</label></div>' +
-        '<div style="display:flex;align-items:center;gap:0.75rem;">' +
-          '<span class="dash-provider-status ' + statusClass + '">' + statusLabel + '</span>' +
-          '<button type="button" class="dash-btn-ghost" data-configure-provider="' + p.id + '">Configure</button>' +
-        '</div>' +
-      '</div>';
-  });
-
   const profileName = currentUser.displayName || 'Not set';
 
   container.innerHTML =
@@ -463,11 +397,6 @@ function renderSettingsView() {
         '<div class="dash-settings-row"><label>Authentication</label><span class="value">' + escapeHtml(getAuthProviderLabel(currentUser)) + '</span></div>' +
       '</div>' +
       '<button type="button" class="dash-btn-secondary dash-settings-signout" id="settings-sign-out">Sign out</button>' +
-    '</div>' +
-    '<div class="dash-settings-group">' +
-      '<h2>AI Providers</h2>' +
-      '<p style="color:var(--dash-text-muted);font-size:0.875rem;margin-bottom:1rem;">Mark providers as connected when API keys are configured in the LOQUIRA desktop app. Keys are never stored in the dashboard.</p>' +
-      '<div class="dash-settings-card">' + providersHtml + '</div>' +
     '</div>';
 
   document.getElementById('settings-sign-out')?.addEventListener('click', handleSignOut);
@@ -519,32 +448,25 @@ async function loadAgents() {
   renderAgentsView();
 }
 
-async function loadSettings() {
+async function loadModels() {
   if (!currentUser) return;
-  dashboardData.settingsState = 'loading';
   dashboardData.modelsState = 'loading';
   renderModelsView();
-  renderSettingsView();
 
   try {
-    dashboardData.settings = await fetchUserSettings(currentUser.uid);
-    dashboardData.settingsState = 'loaded';
-    dashboardData.models = await ensureLoquiraModels(currentUser.uid, dashboardData.settings);
+    dashboardData.models = await ensureLoquiraModels(currentUser.uid);
     dashboardData.modelsState = 'loaded';
   } catch (err) {
-    console.error('[LOQUIRA] Settings load error:', err);
-    dashboardData.settings = {};
+    console.error('[LOQUIRA] Models load error:', err);
     dashboardData.models = [];
-    dashboardData.settingsState = 'loaded';
     dashboardData.modelsState = 'error';
   }
 
   renderModelsView();
-  renderSettingsView();
 }
 
 async function loadDashboardData() {
-  await Promise.all([loadProjects(), loadAgents(), loadSettings()]);
+  await Promise.all([loadProjects(), loadAgents(), loadModels()]);
 }
 
 async function handleCreateProject(e) {
@@ -600,30 +522,6 @@ function handleOpenProject(projectId) {
     console.error('[LOQUIRA] Touch project error:', err);
   });
   showWorkspaceNotice(project.name);
-}
-
-async function saveProviderConfig() {
-  if (!pendingProviderId || !currentUser) return;
-
-  const provider = PROVIDERS.find(function (p) { return p.id === pendingProviderId; });
-  const status = providerStatusSelect.value;
-
-  try {
-    await saveProviderSetting(currentUser.uid, pendingProviderId, {
-      status: status,
-      name: provider.name,
-    });
-    dashboardData.settings[pendingProviderId] = { status: status, name: provider.name };
-    dashboardData.models = await syncLoquiraModels(currentUser.uid, dashboardData.settings);
-    dashboardData.modelsState = 'loaded';
-    closeProviderModal();
-    renderModelsView();
-    renderSettingsView();
-  } catch (err) {
-    console.error('[LOQUIRA] Provider save error:', err);
-    providerModalAlert.textContent = 'Could not save provider settings. Please try again.';
-    providerModalAlert.classList.add('visible');
-  }
 }
 
 function handleQuickAction(action) {
@@ -686,12 +584,6 @@ document.addEventListener('click', function (e) {
   const openEl = e.target.closest('[data-open-project]');
   if (openEl) {
     handleOpenProject(openEl.dataset.openProject);
-    return;
-  }
-
-  const providerEl = e.target.closest('[data-configure-provider]');
-  if (providerEl) {
-    openProviderModal(providerEl.dataset.configureProvider);
   }
 });
 
@@ -729,17 +621,10 @@ document.getElementById('workspace-notice-modal').addEventListener('click', func
   if (e.target.id === 'workspace-notice-modal') closeWorkspaceNotice();
 });
 
-document.getElementById('provider-modal-cancel').addEventListener('click', closeProviderModal);
-document.getElementById('provider-modal-save').addEventListener('click', saveProviderConfig);
-providerModal.addEventListener('click', function (e) {
-  if (e.target === providerModal) closeProviderModal();
-});
-
 document.addEventListener('keydown', function (e) {
   if (e.key === 'Escape') {
     closeProjectModal();
     closeWorkspaceNotice();
-    closeProviderModal();
     closeSidebar();
     closeUserMenu();
   }
@@ -763,4 +648,5 @@ watchAuth(function (user) {
   const initialView = location.hash.replace('#', '') || 'overview';
   navigateTo(VIEWS.includes(initialView) ? initialView : 'overview');
   loadDashboardData();
+  renderSettingsView();
 });

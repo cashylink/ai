@@ -32,12 +32,10 @@ Project: `aiprogekt-155e1`
 | Path | Purpose |
 |------|---------|
 | `users/{uid}/projects` | User projects |
-| `users/{uid}/settings/openrouter` | OpenRouter connection status (no API keys) |
-| `users/{uid}/settings/deepseek` | DeepSeek connection status |
 | `users/{uid}/settings/loquira-sync` | Model catalog sync metadata |
-| `users/{uid}/loquiraModels/{modelId}` | LOQUIRA app models (same allowlist as desktop) |
+| `users/{uid}/loquiraModels/{modelId}` | LOQUIRA app models (customer-facing metadata only) |
 
-Models sync automatically on dashboard load. Mark providers **Connected** in Settings to reflect availability.
+Models sync automatically on dashboard load. Provider/API configuration is managed internally by LOQUIRA — not exposed in the customer dashboard.
 
 ## Local preview
 

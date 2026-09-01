@@ -3,7 +3,6 @@ import {
   doc,
   addDoc,
   getDocs,
-  setDoc,
   writeBatch,
   query,
   orderBy,
@@ -15,7 +14,7 @@ import { db } from './firebase-config.js';
 import {
   LOQUIRA_CATALOG_VERSION,
   encodeModelDocId,
-  enrichCatalogWithAvailability,
+  enrichCatalogForCustomer,
 } from './loquira-models.js';
 
 function userCollection(uid, name) {
@@ -105,25 +104,6 @@ export async function fetchAgentActivity(uid) {
   }
 }
 
-export async function fetchUserSettings(uid) {
-  try {
-    const snapshot = await getDocs(userCollection(uid, 'settings'));
-    const settings = {};
-    snapshot.docs.forEach(function (d) {
-      settings[d.id] = d.data();
-    });
-    return settings;
-  } catch (err) {
-    if (err.code === 'permission-denied') throw err;
-    return {};
-  }
-}
-
-export async function saveProviderSetting(uid, providerId, data) {
-  const ref = doc(db, 'users', uid, 'settings', providerId);
-  await setDoc(ref, { ...data, updatedAt: serverTimestamp() }, { merge: true });
-}
-
 function mapLoquiraModelDoc(d) {
   const data = d.data();
   return {
@@ -131,23 +111,19 @@ function mapLoquiraModelDoc(d) {
     name: data.name || 'Model',
     detail: data.detail || '',
     group: data.group || 'Other',
-    provider: data.provider || '',
-    providerLabel: data.providerLabel || '',
     supportsVision: !!data.supportsVision,
     supportsTools: data.supportsTools !== false,
     supportsReasoning: !!data.supportsReasoning,
     capabilities: Array.isArray(data.capabilities) ? data.capabilities : [],
-    available: !!data.available,
-    availabilityReason: data.availabilityReason || '',
     pickerOrder: typeof data.pickerOrder === 'number' ? data.pickerOrder : 999,
     catalogVersion: data.catalogVersion || '',
     syncedAt: data.syncedAt?.toDate?.() || null,
   };
 }
 
-/** Sync LOQUIRA app model catalog to Firestore (no API keys). */
-export async function syncLoquiraModels(uid, providerSettings) {
-  const enriched = enrichCatalogWithAvailability(providerSettings || {});
+/** Sync LOQUIRA app model catalog to Firestore (customer-facing metadata only). */
+export async function syncLoquiraModels(uid) {
+  const enriched = enrichCatalogForCustomer();
   const batch = writeBatch(db);
   const now = serverTimestamp();
 
@@ -158,14 +134,10 @@ export async function syncLoquiraModels(uid, providerSettings) {
       name: model.name,
       detail: model.detail,
       group: model.group,
-      provider: model.provider,
-      providerLabel: model.providerLabel,
       supportsVision: model.supportsVision,
       supportsTools: model.supportsTools,
       supportsReasoning: model.supportsReasoning,
       capabilities: model.capabilities,
-      available: model.available,
-      availabilityReason: model.availabilityReason,
       pickerOrder: model.pickerOrder,
       catalogVersion: LOQUIRA_CATALOG_VERSION,
       syncedAt: now,
@@ -201,21 +173,18 @@ export async function fetchLoquiraModels(uid) {
 }
 
 /** Load models from Firestore; seed/sync catalog when missing or outdated. */
-export async function ensureLoquiraModels(uid, providerSettings) {
-  const settings = providerSettings || {};
+export async function ensureLoquiraModels(uid) {
   let models = await fetchLoquiraModels(uid);
-  const syncMeta = settings['loquira-sync'];
   const needsSync =
     models.length === 0 ||
-    syncMeta?.catalogVersion !== LOQUIRA_CATALOG_VERSION ||
     models.some(function (m) {
       return m.catalogVersion !== LOQUIRA_CATALOG_VERSION;
     });
 
   if (needsSync) {
-    models = await syncLoquiraModels(uid, settings);
+    models = await syncLoquiraModels(uid);
   } else {
-    models = enrichCatalogWithAvailability(settings);
+    models = enrichCatalogForCustomer();
   }
 
   return models;
