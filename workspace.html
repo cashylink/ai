@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dashboard — LOQUIRA</title>
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#0b0f14">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/loquira.css">
+  <link rel="stylesheet" href="css/dashboard.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%230ea5e9'/><text x='16' y='22' text-anchor='middle' fill='white' font-family='system-ui' font-weight='800' font-size='16'>L</text></svg>">
+</head>
+<body class="dashboard-page">
+
+  <div id="dash-loading" class="dash-loading" aria-live="polite">
+    <div class="dash-loading-spinner" aria-hidden="true"></div>
+    <span>Loading dashboard…</span>
+  </div>
+
+  <div id="dash-app" class="dash-app" style="display:none;" hidden>
+    <div id="sidebar-backdrop" class="dash-sidebar-backdrop" aria-hidden="true"></div>
+
+    <aside id="dash-sidebar" class="dash-sidebar" aria-label="Dashboard navigation">
+      <div class="dash-sidebar-brand">
+        <a href="workspace.html" class="logo" aria-label="LOQUIRA dashboard home">
+          <span class="logo-mark">L</span>LOQUIRA
+        </a>
+      </div>
+
+      <nav class="dash-nav" role="navigation">
+        <button type="button" class="dash-nav-item active" data-view="overview" aria-current="page">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+          Overview
+        </button>
+        <button type="button" class="dash-nav-item" data-view="projects">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+          Projects
+        </button>
+        <button type="button" class="dash-nav-item" data-view="agents">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg>
+          Agent
+        </button>
+        <button type="button" class="dash-nav-item" data-view="models">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+          Models
+        </button>
+      </nav>
+
+      <nav class="dash-nav dash-nav-footer" role="navigation" aria-label="Settings">
+        <div class="dash-nav-divider" aria-hidden="true"></div>
+        <button type="button" class="dash-nav-item" data-view="settings">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+          Settings
+        </button>
+      </nav>
+
+      <div class="dash-sidebar-footer">
+        <div class="dash-sidebar-user">
+          <div class="dash-avatar" id="sidebar-avatar" aria-hidden="true">L</div>
+          <div class="dash-sidebar-user-info">
+            <div class="dash-sidebar-user-name" id="sidebar-name">User</div>
+            <div class="dash-sidebar-user-email" id="sidebar-email">user@email.com</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <div class="dash-main">
+      <header class="dash-header">
+        <div class="dash-header-left">
+          <button type="button" id="menu-toggle" class="dash-menu-toggle" aria-label="Open navigation menu" aria-expanded="false">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          </button>
+          <span class="dash-header-title" id="header-view-title">Overview</span>
+        </div>
+        <div class="dash-header-actions">
+          <button type="button" id="new-project-header-btn" class="dash-btn-primary">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            <span>New project</span>
+          </button>
+          <div class="dash-user-menu">
+            <button type="button" id="user-menu-trigger" class="dash-user-trigger" aria-haspopup="true" aria-expanded="false">
+              <div class="dash-avatar" id="header-avatar" aria-hidden="true">L</div>
+              <span class="dash-user-trigger-name" id="header-name">User</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div id="user-dropdown" class="dash-dropdown" role="menu">
+              <div class="dash-dropdown-header">
+                <div class="name" id="dropdown-name">User</div>
+                <div class="email" id="dropdown-email">user@email.com</div>
+              </div>
+              <button type="button" class="dash-dropdown-item" data-view="settings" role="menuitem">Account settings</button>
+              <button type="button" id="sign-out-btn" class="dash-dropdown-item danger" role="menuitem">Sign out</button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main class="dash-content" id="dash-content">
+
+        <!-- Overview -->
+        <section id="view-overview" class="dash-view active" aria-labelledby="overview-heading">
+          <div class="dash-greeting">
+            <h1 id="overview-heading"><span id="greeting-text">Good evening</span>, <span id="greeting-name">there</span>.</h1>
+            <p>Ready to build?</p>
+          </div>
+
+          <div class="dash-stats" id="overview-stats">
+            <div class="dash-stat-card" id="stat-card-projects" hidden>
+              <div class="dash-stat-label">Projects</div>
+              <div class="dash-stat-value" id="stat-projects">0</div>
+            </div>
+            <div class="dash-stat-card" id="stat-card-agents" hidden>
+              <div class="dash-stat-label">Agent tasks</div>
+              <div class="dash-stat-value" id="stat-agents">0</div>
+            </div>
+            <div class="dash-stat-card dash-stat-skeleton" id="stat-card-loading" hidden>
+              <div class="dash-skeleton" style="height:48px;border-radius:8px;"></div>
+            </div>
+          </div>
+
+          <div class="dash-section">
+            <div class="dash-section-header"><h2>Start building</h2></div>
+            <div class="dash-grid-4">
+              <button type="button" class="dash-action-card" data-action="new-project">
+                <div class="dash-action-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></div>
+                <h3>New project</h3>
+                <p>Create a new project with LOQUIRA.</p>
+              </button>
+              <button type="button" class="dash-action-card" data-action="open-workspace">
+                <div class="dash-action-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div>
+                <h3>Open workspace</h3>
+                <p>Continue working on an existing project.</p>
+              </button>
+              <button type="button" class="dash-action-card" data-action="build-website">
+                <div class="dash-action-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg></div>
+                <h3>Build a website</h3>
+                <p>Create a website with LOQUIRA.</p>
+              </button>
+              <button type="button" class="dash-action-card" data-action="ask-agent">
+                <div class="dash-action-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></div>
+                <h3>Ask LOQUIRA</h3>
+                <p>Start a task with your AI agent.</p>
+              </button>
+            </div>
+          </div>
+
+          <div class="dash-section">
+            <div class="dash-section-header">
+              <h2>Recent projects</h2>
+              <button type="button" class="dash-btn-ghost" data-view="projects">View all</button>
+            </div>
+            <div id="recent-projects-container"></div>
+          </div>
+
+          <div class="dash-section">
+            <div class="dash-section-header">
+              <h2>Recent agent activity</h2>
+              <button type="button" class="dash-btn-ghost" data-view="agents">View all</button>
+            </div>
+            <div id="recent-agents-container"></div>
+          </div>
+        </section>
+
+        <!-- Projects -->
+        <section id="view-projects" class="dash-view" aria-labelledby="projects-heading">
+          <h1 class="dash-page-title" id="projects-heading">Projects</h1>
+          <div class="dash-section-header">
+            <p style="color:var(--dash-text-secondary);font-size:0.875rem;">Your LOQUIRA projects.</p>
+            <button type="button" class="dash-btn-primary" data-action="new-project">Create project</button>
+          </div>
+          <div id="projects-container"></div>
+        </section>
+
+        <!-- Agents -->
+        <section id="view-agents" class="dash-view" aria-labelledby="agents-heading">
+          <h1 class="dash-page-title" id="agents-heading">Agent</h1>
+          <p style="color:var(--dash-text-secondary);font-size:0.875rem;margin-bottom:1.5rem;">Recent LOQUIRA Agent tasks from your workspace.</p>
+          <div id="agents-container"></div>
+        </section>
+
+        <!-- Models -->
+        <section id="view-models" class="dash-view" aria-labelledby="models-heading">
+          <h1 class="dash-page-title" id="models-heading">Models</h1>
+          <p style="color:var(--dash-text-secondary);font-size:0.875rem;margin-bottom:1.5rem;">Models available through your configured providers.</p>
+          <div id="models-container"></div>
+        </section>
+
+        <!-- Settings -->
+        <section id="view-settings" class="dash-view" aria-labelledby="settings-heading">
+          <h1 class="dash-page-title" id="settings-heading">Settings</h1>
+          <div id="settings-container"></div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- New project modal -->
+  <div id="project-modal" class="dash-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title" hidden>
+    <div class="dash-modal">
+      <h2 id="modal-title">Create project</h2>
+      <p>Start a new LOQUIRA project. You can open it in the workspace when ready.</p>
+      <div id="modal-alert" class="dash-alert error" role="alert"></div>
+      <form id="project-form">
+        <div class="dash-form-group">
+          <label for="project-name">Project name</label>
+          <input class="dash-form-input" type="text" id="project-name" name="name" placeholder="My project" required maxlength="80" autocomplete="off">
+        </div>
+        <div class="dash-form-group">
+          <label for="project-type">Project type</label>
+          <select class="dash-form-select" id="project-type" name="type">
+            <option value="app">Application</option>
+            <option value="website">Website</option>
+            <option value="api">API</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="dash-modal-actions">
+          <button type="button" class="dash-btn-secondary" id="modal-cancel">Cancel</button>
+          <button type="submit" class="dash-btn-primary" id="modal-submit">Create project</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Workspace notice modal -->
+  <div id="workspace-notice-modal" class="dash-overlay" role="dialog" aria-modal="true" aria-labelledby="workspace-notice-title" hidden>
+    <div class="dash-modal">
+      <h2 id="workspace-notice-title">Open in LOQUIRA</h2>
+      <p id="workspace-notice-text">Open this project in the LOQUIRA desktop workspace when connected.</p>
+      <div class="dash-modal-actions">
+        <button type="button" class="dash-btn-primary" id="workspace-notice-close">Got it</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Provider status modal -->
+  <div id="provider-modal" class="dash-overlay" role="dialog" aria-modal="true" aria-labelledby="provider-modal-title" hidden>
+    <div class="dash-modal">
+      <h2 id="provider-modal-title">Configure provider</h2>
+      <p id="provider-modal-desc">Set the connection status for this provider. API keys are configured in the LOQUIRA app.</p>
+      <div id="provider-modal-alert" class="dash-alert error" role="alert"></div>
+      <div class="dash-form-group">
+        <label for="provider-status">Status</label>
+        <select class="dash-form-select" id="provider-status">
+          <option value="not-configured">Not configured</option>
+          <option value="connected">Connected</option>
+          <option value="invalid">Invalid</option>
+        </select>
+      </div>
+      <div class="dash-modal-actions">
+        <button type="button" class="dash-btn-secondary" id="provider-modal-cancel">Cancel</button>
+        <button type="button" class="dash-btn-primary" id="provider-modal-save">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="js/dashboard.js"></script>
+</body>
+</html>

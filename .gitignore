@@ -1,0 +1,16 @@
+# Old Framer export (not used by LOQUIRA site)
+framer.com/
+framerusercontent.com/
+events.framer.com/
+fonts.gstatic.com/
+
+# IDE / OS
+.cursor/
+assets/
+.DS_Store
+Thumbs.db
+*.log
+
+# Env secrets (if added later)
+.env
+.env.*

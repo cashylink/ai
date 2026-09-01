@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LOQUIRA — The AI Development Workspace</title>
+  <meta name="description" content="Build software with AI. LOQUIRA brings AI agents, code, files, tools, and previews into one intelligent development workspace.">
+  <meta name="theme-color" content="#0f172a">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="LOQUIRA — The AI Development Workspace">
+  <meta property="og:description" content="Build software with AI. LOQUIRA brings AI agents, code, files, tools, and previews into one intelligent development workspace.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="LOQUIRA — The AI Development Workspace">
+  <meta name="twitter:description" content="Build software with AI. LOQUIRA brings AI agents, code, files, tools, and previews into one intelligent development workspace.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/loquira.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%230ea5e9'/><text x='16' y='22' text-anchor='middle' fill='white' font-family='system-ui' font-weight='800' font-size='16'>L</text></svg>">
+</head>
+<body>
+
+  <nav class="navbar" role="navigation" aria-label="Main navigation">
+    <div class="container">
+      <a href="index.html" class="logo" aria-label="LOQUIRA home">
+        <span class="logo-mark">L</span>
+        LOQUIRA
+      </a>
+      <div class="nav-links">
+        <a href="#showcase">Product</a>
+        <a href="#features">Features</a>
+        <a href="#agent">How it works</a>
+        <a href="#models">Models</a>
+      </div>
+      <div class="nav-actions">
+        <a href="login.html" class="nav-signin">Sign in</a>
+        <a href="signup.html" class="btn btn-primary">Start building</a>
+      </div>
+      <button class="mobile-toggle" aria-label="Open menu" aria-expanded="false">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+          <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+      </button>
+    </div>
+  </nav>
+
+  <div class="mobile-menu" role="dialog" aria-label="Mobile navigation">
+    <a href="#showcase">Product</a>
+    <a href="#features">Features</a>
+    <a href="#agent">How it works</a>
+    <a href="#models">Models</a>
+    <a href="login.html" class="nav-signin">Sign in</a>
+    <a href="signup.html" class="btn btn-primary btn-lg">Start building</a>
+  </div>
+
+  <main>
+    <!-- 01 Hero -->
+    <section class="hero" id="hero">
+      <div class="container">
+        <p class="hero-eyebrow reveal">The AI development workspace</p>
+        <h1 class="hero-title reveal">Build software with <span class="gradient-text">AI</span>.</h1>
+        <p class="hero-subtitle reveal">LOQUIRA brings AI agents, code, files, tools, and previews into one workspace — so you can turn ideas into working software faster.</p>
+        <div class="hero-cta reveal">
+          <a href="signup.html" class="btn btn-primary btn-lg">Start building</a>
+          <a href="#showcase" class="btn btn-secondary btn-lg">Explore the workspace</a>
+        </div>
+        <p class="hero-meta reveal">AI Agent · Multi-model · Vision · Website Builder</p>
+      </div>
+    </section>
+
+    <!-- 02 Product Showcase -->
+    <section class="showcase" id="showcase" aria-labelledby="showcase-heading">
+      <h2 id="showcase-heading" class="sr-only">LOQUIRA Workspace</h2>
+      <div class="showcase-wrapper reveal">
+        <div class="product-mockup" role="img" aria-label="LOQUIRA workspace with file explorer, code editor, terminal, preview, and AI agent panel">
+          <div class="mockup-titlebar">
+            <div class="mockup-dots"><span></span><span></span><span></span></div>
+            <span class="mockup-title">LOQUIRA Workspace</span>
+            <div class="mockup-model-selector">
+              <span class="auto-badge">Auto</span>
+              <span>Available models</span>
+            </div>
+          </div>
+          <div class="mockup-body">
+            <aside class="mockup-sidebar" aria-label="File explorer">
+              <div class="mockup-sidebar-title">Explorer</div>
+              <div class="mockup-file"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M1.75 1A1.75 1.75 0 000 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0016 13.25v-8.5A1.75 1.75 0 0014.25 3H7.5a.25.25 0 01-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5 1H1.75z"/></svg>src/</div>
+              <div class="mockup-file active"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M4 0a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V4.5L9.5 0H4zm5 1.5L13.5 6H9a1 1 0 01-1-1V1.5z"/></svg>page.tsx</div>
+              <div class="mockup-file"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M4 0a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V4.5L9.5 0H4zm5 1.5L13.5 6H9a1 1 0 01-1-1V1.5z"/></svg>layout.tsx</div>
+              <div class="mockup-file"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M1.75 1A1.75 1.75 0 000 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0016 13.25v-8.5A1.75 1.75 0 0014.25 3H7.5a.25.25 0 01-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5 1H1.75z"/></svg>components/</div>
+              <div class="mockup-file"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M1.75 1A1.75 1.75 0 000 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0016 13.25v-8.5A1.75 1.75 0 0014.25 3H7.5a.25.25 0 01-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5 1H1.75z"/></svg>assets/</div>
+            </aside>
+            <div class="mockup-editor">
+              <div class="mockup-tabs" role="tablist" aria-label="Editor tabs">
+                <span class="mockup-tab active" role="tab">page.tsx</span>
+                <span class="mockup-tab" role="tab">Preview</span>
+                <span class="mockup-tab" role="tab">Terminal</span>
+              </div>
+              <div class="mockup-editor-main">
+                <div class="mockup-code" aria-label="Code editor">
+                  <div><span class="line-num">1</span><span class="kw">export default function</span> <span class="fn">Page</span>() {</div>
+                  <div><span class="line-num">2</span>  <span class="kw">return</span> (</div>
+                  <div><span class="line-num">3</span>    &lt;<span class="type">main</span> <span class="prop">className</span>=<span class="str">"app"</span>&gt;</div>
+                  <div><span class="line-num">4</span>      &lt;<span class="type">Hero</span> /&gt;</div>
+                  <div><span class="line-num">5</span>    &lt;/<span class="type">main</span>&gt;</div>
+                  <div><span class="line-num">6</span>  )</div>
+                  <div><span class="line-num">7</span>}</div>
+                </div>
+                <div class="mockup-terminal" aria-label="Terminal">
+                  <span class="term-prompt">$</span> npm run dev
+                  <span class="term-out">ready — local preview running</span>
+                </div>
+              </div>
+            </div>
+            <aside class="mockup-agent" aria-label="AI Agent panel">
+              <div class="mockup-agent-header"><span class="agent-dot"></span> LOQUIRA Agent</div>
+              <div class="mockup-chat">
+                <div class="chat-bubble user">Add a hero section and connect it to the layout.</div>
+                <div class="chat-bubble agent">
+                  I'll read the project files and update the layout.
+                  <span class="tool-tag">✓ Read layout.tsx</span>
+                  <span class="tool-tag">✓ Updated page.tsx</span>
+                </div>
+              </div>
+              <div class="mockup-input">Message LOQUIRA Agent…</div>
+            </aside>
+          </div>
+          <div class="mockup-statusbar">
+            <div class="status-item"><span class="status-indicator"></span> Agent active · Auto · 2 files changed</div>
+            <div class="status-item">TypeScript · Preview</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 03 Problem / Solution -->
+    <section class="section section-alt" id="features">
+      <div class="container">
+        <div class="section-intro text-center reveal">
+          <h2 class="section-title">Stop switching between tools.</h2>
+          <p class="section-subtitle">Building software with AI shouldn't mean jumping between a chat window, code editor, terminal, browser, and different AI providers.</p>
+          <p class="section-lead reveal">LOQUIRA brings the development workflow together in one workspace.</p>
+        </div>
+        <div class="problem-grid stagger-children">
+          <article class="problem-card reveal">
+            <span class="problem-num">01</span>
+            <h3>Understand</h3>
+            <p>Keep your project and its context close to the work.</p>
+          </article>
+          <article class="problem-card reveal">
+            <span class="problem-num">02</span>
+            <h3>Build</h3>
+            <p>Use AI to write, modify, and improve your code.</p>
+          </article>
+          <article class="problem-card reveal">
+            <span class="problem-num">03</span>
+            <h3>Run</h3>
+            <p>Work with the development tools your project needs.</p>
+          </article>
+          <article class="problem-card reveal">
+            <span class="problem-num">04</span>
+            <h3>Preview</h3>
+            <p>See the result and iterate as you build.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- 04 AI Agent -->
+    <section class="section" id="agent">
+      <div class="container">
+        <div class="section-intro text-center reveal">
+          <h2 class="section-title">An AI agent that works on your project.</h2>
+          <p class="section-subtitle">LOQUIRA Agent can work with your project context, inspect files, make supported changes, and use available development tools to move tasks from idea to implementation.</p>
+        </div>
+        <div class="agent-steps-grid stagger-children">
+          <article class="agent-step-card reveal">
+            <span class="agent-step-num">01</span>
+            <h3>Understand</h3>
+            <p>Understand the project and the task.</p>
+          </article>
+          <article class="agent-step-card reveal">
+            <span class="agent-step-num">02</span>
+            <h3>Plan</h3>
+            <p>Break the task into actionable steps.</p>
+          </article>
+          <article class="agent-step-card reveal">
+            <span class="agent-step-num">03</span>
+            <h3>Edit</h3>
+            <p>Create or modify the required code.</p>
+          </article>
+          <article class="agent-step-card reveal">
+            <span class="agent-step-num">04</span>
+            <h3>Run</h3>
+            <p>Use available development tools.</p>
+          </article>
+          <article class="agent-step-card reveal">
+            <span class="agent-step-num">05</span>
+            <h3>Test</h3>
+            <p>Check the result and catch issues.</p>
+          </article>
+          <article class="agent-step-card reveal">
+            <span class="agent-step-num">06</span>
+            <h3>Refine</h3>
+            <p>Iterate until the result is right.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- 05 Multi-Model AI -->
+    <section class="section section-alt" id="models">
+      <div class="container text-center">
+        <h2 class="section-title reveal">The AI model that fits the task.</h2>
+        <p class="section-subtitle reveal">Work with multiple AI providers and models from one workspace.</p>
+        <div class="models-grid stagger-children">
+          <article class="model-card reveal">
+            <span class="model-tag">Auto</span>
+            <h3>AUTO</h3>
+            <p>Let LOQUIRA choose a suitable available model for the task.</p>
+          </article>
+          <article class="model-card reveal">
+            <span class="model-tag">Fast</span>
+            <h3>FAST</h3>
+            <p>For quick, everyday development tasks.</p>
+          </article>
+          <article class="model-card reveal">
+            <span class="model-tag">Balanced</span>
+            <h3>BALANCED</h3>
+            <p>For everyday coding and development work.</p>
+          </article>
+          <article class="model-card reveal">
+            <span class="model-tag">High</span>
+            <h3>HIGH</h3>
+            <p>For complex coding, architecture, and reasoning tasks.</p>
+          </article>
+          <article class="model-card reveal">
+            <span class="model-tag">Vision</span>
+            <h3>VISION</h3>
+            <p>For tasks that require image or screenshot understanding.</p>
+          </article>
+          <article class="model-card reveal">
+            <span class="model-tag">Tools</span>
+            <h3>TOOLS</h3>
+            <p>For models that support LOQUIRA's development tools.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- 06 Auto Routing -->
+    <section class="section" id="auto-routing">
+      <div class="container">
+        <div class="split-section">
+          <div class="split-content reveal">
+            <h2 class="section-title">Choose your model.<br>Or let LOQUIRA choose.</h2>
+            <p class="section-subtitle">When Auto is enabled, LOQUIRA evaluates the task and available model capabilities before selecting a suitable model.</p>
+            <ul class="routing-examples">
+              <li><strong>Simple task</strong> → Fast model</li>
+              <li><strong>Everyday coding</strong> → Balanced model</li>
+              <li><strong>Complex task</strong> → High-capability model</li>
+              <li><strong>Image task</strong> → Vision-capable model</li>
+            </ul>
+          </div>
+          <div class="split-visual reveal">
+            <div class="routing-flow" aria-label="Auto routing flow">
+              <div class="routing-step">Simple task</div>
+              <div class="routing-arrow" aria-hidden="true">↓</div>
+              <div class="routing-step">Task requirements</div>
+              <div class="routing-arrow" aria-hidden="true">↓</div>
+              <div class="routing-step">Available models</div>
+              <div class="routing-arrow" aria-hidden="true">↓</div>
+              <div class="routing-step">Capability + speed + cost</div>
+              <div class="routing-arrow" aria-hidden="true">↓</div>
+              <div class="routing-step routing-step-highlight">Selected model</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 07 Vision -->
+    <section class="section section-alt" id="vision">
+      <div class="container">
+        <div class="split-section split-reverse">
+          <div class="split-content reveal">
+            <h2 class="section-title">Your AI can see what you're building.</h2>
+            <p class="section-subtitle">Share screenshots and visual references when words aren't enough. LOQUIRA can use compatible vision models for image-based tasks.</p>
+            <div class="vision-cards-inline">
+              <article class="vision-inline-card">
+                <h3>Screenshots</h3>
+                <p>Analyze interface and design references.</p>
+              </article>
+              <article class="vision-inline-card">
+                <h3>Images</h3>
+                <p>Understand visual content.</p>
+              </article>
+            </div>
+          </div>
+          <div class="split-visual reveal">
+            <div class="vision-flow" aria-label="Vision workflow example">
+              <div class="vision-flow-step">Screenshot</div>
+              <div class="vision-flow-arrow" aria-hidden="true">↓</div>
+              <div class="vision-flow-step vision-flow-brand">LOQUIRA</div>
+              <div class="vision-flow-arrow" aria-hidden="true">↓</div>
+              <div class="vision-flow-step vision-flow-prompt">"Recreate this interface"</div>
+              <div class="vision-flow-arrow" aria-hidden="true">↓</div>
+              <div class="vision-flow-step vision-flow-result">Code / UI result</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 08 Website Builder -->
+    <section class="section" id="website-builder">
+      <div class="container">
+        <div class="split-section">
+          <div class="split-content reveal">
+            <h2 class="section-title">From an idea to a real website.</h2>
+            <p class="section-subtitle">Describe what you want to build, then use LOQUIRA to generate, refine, and iterate on the result.</p>
+            <ol class="workflow-list">
+              <li><strong>Describe</strong> — Explain what you want to build.</li>
+              <li><strong>Generate</strong> — Create the initial structure and interface.</li>
+              <li><strong>Refine</strong> — Ask LOQUIRA to improve and change the result.</li>
+              <li><strong>Preview</strong> — Review the result while you build.</li>
+            </ol>
+            <ul class="check-list">
+              <li>Responsive layouts</li>
+              <li>Modern components</li>
+              <li>Professional UI/UX</li>
+              <li>Interactive sections</li>
+              <li>Fast iteration</li>
+              <li>AI-assisted refinement</li>
+            </ul>
+            <a href="signup.html" class="btn btn-primary">Build a website</a>
+          </div>
+          <div class="split-visual reveal">
+            <div class="website-preview">
+              <div class="wp-bar"><span></span><span></span><span></span><span class="wp-url">preview</span></div>
+              <div class="wp-content">
+                <div class="wp-nav"><span class="wp-logo">LOQUIRA</span><span>Features</span><span>About</span></div>
+                <div class="wp-hero">
+                  <div class="wp-hero-title">Build with<br>LOQUIRA</div>
+                  <div class="wp-hero-btn">Get started</div>
+                </div>
+                <div class="wp-cards">
+                  <div class="wp-card"></div>
+                  <div class="wp-card"></div>
+                  <div class="wp-card"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 09 Your Codebase -->
+    <section class="section section-alt" id="codebase">
+      <div class="container text-center">
+        <h2 class="section-title reveal">Your project, not just a conversation.</h2>
+        <p class="section-subtitle reveal">LOQUIRA works with your project files and development workflow instead of keeping your work inside a chat window.</p>
+        <div class="codebase-grid stagger-children">
+          <article class="codebase-card reveal">
+            <h3>Files</h3>
+            <p>Understand and modify project files.</p>
+          </article>
+          <article class="codebase-card reveal">
+            <h3>Code</h3>
+            <p>Write, refactor, and improve code with AI.</p>
+          </article>
+          <article class="codebase-card reveal">
+            <h3>Terminal</h3>
+            <p>Run supported development commands.</p>
+          </article>
+          <article class="codebase-card reveal">
+            <h3>Preview</h3>
+            <p>Check the result as you work.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- 10 Why LOQUIRA -->
+    <section class="section" id="why-loquira">
+      <div class="container text-center">
+        <h2 class="section-title reveal">Built around the way you actually build.</h2>
+        <div class="why-grid stagger-children">
+          <article class="why-card reveal">
+            <h3>One workspace</h3>
+            <p>Keep your AI, code, files, tools, and preview together.</p>
+          </article>
+          <article class="why-card reveal">
+            <h3>Agent-first</h3>
+            <p>Give the AI development tasks instead of only asking questions.</p>
+          </article>
+          <article class="why-card reveal">
+            <h3>Model freedom</h3>
+            <p>Work with the models and providers available to your workspace.</p>
+          </article>
+          <article class="why-card reveal">
+            <h3>Iterate fast</h3>
+            <p>Make changes, preview the result, and keep moving.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- 13 FAQ -->
+    <section class="section section-alt" id="faq">
+      <div class="container text-center">
+        <h2 class="section-title reveal">Frequently asked questions</h2>
+        <div class="faq-list">
+          <div class="faq-item reveal">
+            <button class="faq-question" aria-expanded="false">What is LOQUIRA?<svg class="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+            <div class="faq-answer"><div class="faq-answer-inner">LOQUIRA is an AI development workspace that brings AI agents, project files, coding tools, and previews into one environment for building software.</div></div>
+          </div>
+          <div class="faq-item reveal">
+            <button class="faq-question" aria-expanded="false">What is LOQUIRA Agent?<svg class="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+            <div class="faq-answer"><div class="faq-answer-inner">LOQUIRA Agent is the AI development agent that can work with your project and perform supported coding and development tasks.</div></div>
+          </div>
+          <div class="faq-item reveal">
+            <button class="faq-question" aria-expanded="false">What is LOQUIRA Auto?<svg class="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+            <div class="faq-answer"><div class="faq-answer-inner">Auto lets LOQUIRA select a suitable available model for a task based on the requirements and capabilities available in your workspace.</div></div>
+          </div>
+          <div class="faq-item reveal">
+            <button class="faq-question" aria-expanded="false">Can I choose my AI model?<svg class="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+            <div class="faq-answer"><div class="faq-answer-inner">Yes. You can choose from the models available and configured in your workspace.</div></div>
+          </div>
+          <div class="faq-item reveal">
+            <button class="faq-question" aria-expanded="false">Can LOQUIRA understand screenshots?<svg class="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+            <div class="faq-answer"><div class="faq-answer-inner">Yes, when a compatible vision model is configured and available.</div></div>
+          </div>
+          <div class="faq-item reveal">
+            <button class="faq-question" aria-expanded="false">Can LOQUIRA build websites?<svg class="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+            <div class="faq-answer"><div class="faq-answer-inner">Yes. LOQUIRA includes AI-assisted website building and iteration workflows.</div></div>
+          </div>
+          <div class="faq-item reveal">
+            <button class="faq-question" aria-expanded="false">Can LOQUIRA work with an existing project?<svg class="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+            <div class="faq-answer"><div class="faq-answer-inner">Yes. LOQUIRA is designed to work with existing project files and codebases.</div></div>
+          </div>
+          <div class="faq-item reveal">
+            <button class="faq-question" aria-expanded="false">Do I need coding experience?<svg class="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+            <div class="faq-answer"><div class="faq-answer-inner">LOQUIRA is built for developers, while its natural-language workflows can also help users turn ideas into software without starting from scratch.</div></div>
+          </div>
+          <div class="faq-item reveal">
+            <button class="faq-question" aria-expanded="false">Which AI models does LOQUIRA support?<svg class="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+            <div class="faq-answer"><div class="faq-answer-inner">LOQUIRA supports the AI providers and models available in your configured workspace. The available model list can change as providers and models are added or removed.</div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 14 Final CTA -->
+    <section class="cta-section" id="cta">
+      <div class="container">
+        <div class="cta-box reveal">
+          <h2 class="section-title">Have an idea?<br>Build it.</h2>
+          <p class="section-subtitle">Start with a description and use LOQUIRA to turn your idea into working software.</p>
+          <div class="hero-cta">
+            <a href="signup.html" class="btn btn-primary btn-lg">Start building</a>
+            <a href="#showcase" class="btn btn-secondary btn-lg">Explore the workspace</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- 15 Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid footer-grid-minimal">
+        <div class="footer-brand">
+          <a href="index.html" class="logo"><span class="logo-mark">L</span>LOQUIRA</a>
+          <p>The AI development workspace for building software with AI.</p>
+        </div>
+        <div class="footer-col">
+          <h4>Product</h4>
+          <a href="#showcase">Workspace</a>
+          <a href="#agent">AI Agent</a>
+          <a href="#models">Models</a>
+          <a href="#website-builder">Website Builder</a>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <span>&copy; 2026 LOQUIRA. All rights reserved.</span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/loquira.js"></script>
+  <script type="module" src="js/nav-auth.js"></script>
+</body>
+</html>
