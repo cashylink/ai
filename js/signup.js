@@ -6,6 +6,7 @@ import {
   watchAuth,
 } from './auth.js';
 import { initAnalytics } from './firebase-config.js';
+import { isDesktopAuthFlow, completeDesktopHandoff } from './desktop-auth.js';
 
 initAnalytics();
 
@@ -13,16 +14,33 @@ const form = document.getElementById('signup-form');
 const alertEl = document.getElementById('auth-alert');
 const submitBtn = document.getElementById('submit-btn');
 const googleBtn = document.getElementById('google-btn');
+const desktopFlow = isDesktopAuthFlow();
 
-watchAuth(function (user) {
-  if (user) {
-    window.location.href = 'workspace.html';
+watchAuth(async function (user) {
+  if (!user) return;
+  if (desktopFlow) {
+    try {
+      await completeDesktopHandoff(user);
+    } catch (err) {
+      showAlert('تعذر ربط الحساب بالتطبيق: ' + (err.message || 'خطأ غير معروف'), 'error');
+    }
+    return;
   }
+  window.location.href = 'workspace.html';
 });
 
 handleGoogleRedirectResult()
-  .then(function (user) {
-    if (user) window.location.href = 'workspace.html';
+  .then(async function (user) {
+    if (!user) return;
+    if (desktopFlow) {
+      try {
+        await completeDesktopHandoff(user);
+      } catch (err) {
+        showAlert('تعذر ربط الحساب بالتطبيق: ' + (err.message || 'خطأ غير معروف'), 'error');
+      }
+      return;
+    }
+    window.location.href = 'workspace.html';
   })
   .catch(function (err) {
     showAlert(getAuthErrorMessage(err.code), 'error');
@@ -43,6 +61,15 @@ function setLoading(loading, googleOnly) {
   if (!googleOnly) {
     submitBtn.textContent = loading ? 'Creating account…' : 'Create account';
   }
+}
+
+async function afterSignIn(user) {
+  if (!user) return;
+  if (desktopFlow) {
+    await completeDesktopHandoff(user);
+    return;
+  }
+  window.location.href = 'workspace.html';
 }
 
 form.addEventListener('submit', async function (e) {
@@ -71,8 +98,8 @@ form.addEventListener('submit', async function (e) {
 
   setLoading(true);
   try {
-    await signUpWithEmail(name, email, password);
-    window.location.href = 'workspace.html';
+    const user = await signUpWithEmail(name, email, password);
+    await afterSignIn(user);
   } catch (err) {
     showAlert(getAuthErrorMessage(err.code), 'error');
   } finally {
@@ -86,7 +113,7 @@ googleBtn.addEventListener('click', async function () {
   try {
     const user = await signInWithGoogle();
     if (user) {
-      window.location.href = 'workspace.html';
+      await afterSignIn(user);
     }
   } catch (err) {
     if (err.code !== 'auth/popup-closed-by-user') {

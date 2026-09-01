@@ -9,6 +9,7 @@ const files = [
   'index.html',
   'login.html',
   'signup.html',
+  'desktop-auth-success.html',
   'workspace.html',
   'firestore.rules',
   'README.md',
