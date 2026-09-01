@@ -12,6 +12,9 @@ const files = [
   'workspace.html',
   'firestore.rules',
   'README.md',
+  'favicon.svg',
+  'favicon.png',
+  'favicon.ico',
 ];
 
 const dirs = ['css', 'js'];
