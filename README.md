@@ -11,7 +11,13 @@ Upload the repository root to any static host (GitHub Pages, Netlify, Vercel, cP
 - `css/` — styles
 - `js/` — Firebase auth, dashboard, landing page
 
-No build step required.
+No build step required for local dev. For a clean deploy bundle:
+
+```bash
+npm run dist
+```
+
+This creates a `dist/` folder with only the files needed for hosting.
 
 ## Firebase setup
 
@@ -20,6 +26,18 @@ No build step required.
 3. **Firestore** → Enable and deploy `firestore.rules` for dashboard projects
 
 Project: `aiprogekt-155e1`
+
+### Firestore data (dashboard)
+
+| Path | Purpose |
+|------|---------|
+| `users/{uid}/projects` | User projects |
+| `users/{uid}/settings/openrouter` | OpenRouter connection status (no API keys) |
+| `users/{uid}/settings/deepseek` | DeepSeek connection status |
+| `users/{uid}/settings/loquira-sync` | Model catalog sync metadata |
+| `users/{uid}/loquiraModels/{modelId}` | LOQUIRA app models (same allowlist as desktop) |
+
+Models sync automatically on dashboard load. Mark providers **Connected** in Settings to reflect availability.
 
 ## Local preview
 

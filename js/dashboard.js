@@ -7,9 +7,12 @@ import {
   fetchAgentActivity,
   fetchUserSettings,
   saveProviderSetting,
+  ensureLoquiraModels,
+  syncLoquiraModels,
   formatRelativeTime,
   getProjectTypeLabel,
 } from './dashboard-store.js';
+import { LOQUIRA_PROVIDERS, groupModels } from './loquira-models.js';
 
 initAnalytics();
 
@@ -22,20 +25,18 @@ const VIEW_TITLES = {
   settings: 'Settings',
 };
 
-const PROVIDERS = [
-  { id: 'openrouter', name: 'OpenRouter' },
-  { id: 'deepseek', name: 'DeepSeek' },
-  { id: 'google', name: 'Google/Gemini' },
-];
+const PROVIDERS = LOQUIRA_PROVIDERS;
 
 let currentUser = null;
 let dashboardData = {
   projects: [],
   agents: [],
   settings: {},
+  models: [],
   projectsState: 'loading',
   agentsState: 'loading',
   settingsState: 'loading',
+  modelsState: 'loading',
 };
 
 let pendingProviderId = null;
@@ -337,19 +338,75 @@ function updateStats() {
 }
 
 function getConfiguredModels(settings) {
-  const models = [];
-  PROVIDERS.forEach(function (p) {
-    const s = settings[p.id];
-    if (!s || s.status !== 'connected' || !Array.isArray(s.models)) return;
-    s.models.forEach(function (m) {
-      if (!m || !m.name) return;
-      const caps = Array.isArray(m.capabilities)
-        ? m.capabilities.join(' · ')
-        : (m.capabilities || '');
-      models.push({ name: m.name, provider: p.name, capabilities: caps });
+  if (Array.isArray(dashboardData.models) && dashboardData.models.length > 0) {
+    return dashboardData.models.filter(function (m) {
+      return m.available;
     });
+  }
+  return [];
+}
+
+function renderModelCard(model) {
+  const caps = Array.isArray(model.capabilities) ? model.capabilities.join(' · ') : '';
+  const statusClass = model.available ? 'available' : 'unavailable';
+  const statusLabel = model.available ? 'Available' : 'Unavailable';
+
+  return (
+    '<div class="dash-model-card' + (model.available ? '' : ' dash-model-card--muted') + '">' +
+      '<div class="dash-model-card-head">' +
+        '<h3>' + escapeHtml(model.name) + '</h3>' +
+        '<span class="dash-model-status ' + statusClass + '">' + statusLabel + '</span>' +
+      '</div>' +
+      '<p class="dash-model-meta">' +
+        escapeHtml(model.providerLabel) +
+        (caps ? ' · ' + escapeHtml(caps) : '') +
+      '</p>' +
+      (model.detail ? '<p class="dash-model-detail">' + escapeHtml(model.detail) + '</p>' : '') +
+      (!model.available && model.availabilityReason
+        ? '<p class="dash-model-hint">' + escapeHtml(model.availabilityReason) + '</p>'
+        : '') +
+    '</div>'
+  );
+}
+
+function renderModelsView() {
+  const container = document.getElementById('models-container');
+  if (dashboardData.modelsState === 'loading' || dashboardData.settingsState === 'loading') {
+    container.innerHTML = renderSkeleton(3);
+    return;
+  }
+
+  const models = dashboardData.models;
+  if (!models || models.length === 0) {
+    container.innerHTML = renderEmptyState(
+      'No models synced',
+      'LOQUIRA models will appear here after your account syncs with Firebase.',
+      'Go to Settings',
+      'go-settings'
+    );
+    return;
+  }
+
+  const grouped = groupModels(models);
+  const availableCount = models.filter(function (m) { return m.available; }).length;
+
+  let html =
+    '<div class="dash-models-summary">' +
+      '<span>' + availableCount + ' of ' + models.length + ' models available</span>' +
+      '<span class="dash-models-summary-hint">Same catalog as the LOQUIRA desktop app</span>' +
+    '</div>';
+
+  grouped.forEach(function (section) {
+    html +=
+      '<section class="dash-model-group" aria-label="' + escapeHtml(section.group) + ' models">' +
+        '<h2 class="dash-model-group-title">' + escapeHtml(section.group) + '</h2>' +
+        '<div class="dash-model-grid">' +
+          section.models.map(renderModelCard).join('') +
+        '</div>' +
+      '</section>';
   });
-  return models;
+
+  container.innerHTML = html;
 }
 
 function renderOverview() {
@@ -364,38 +421,6 @@ function renderProjectsView() {
 
 function renderAgentsView() {
   renderAgentsList(document.getElementById('agents-container'), dashboardData.agents);
-}
-
-function renderModelsView() {
-  const container = document.getElementById('models-container');
-  if (dashboardData.settingsState === 'loading') {
-    container.innerHTML = renderSkeleton(3);
-    return;
-  }
-
-  const models = getConfiguredModels(dashboardData.settings);
-
-  if (models.length === 0) {
-    container.innerHTML = renderEmptyState(
-      'No models available',
-      'Configure AI providers in Settings. Only models connected through your providers will appear here.',
-      'Go to Settings',
-      'go-settings'
-    );
-    return;
-  }
-
-  container.innerHTML =
-    '<div class="dash-project-list">' +
-    models.map(function (m) {
-      return (
-        '<div class="dash-model-card">' +
-          '<h3>' + escapeHtml(m.name) + '</h3>' +
-          '<p>' + escapeHtml(m.provider) + (m.capabilities ? ' · ' + escapeHtml(m.capabilities) : '') + '</p>' +
-        '</div>'
-      );
-    }).join('') +
-    '</div>';
 }
 
 function getAuthProviderLabel(user) {
@@ -441,7 +466,7 @@ function renderSettingsView() {
     '</div>' +
     '<div class="dash-settings-group">' +
       '<h2>AI Providers</h2>' +
-      '<p style="color:var(--dash-text-muted);font-size:0.875rem;margin-bottom:1rem;">Provider connection status for your workspace. API keys are never displayed here.</p>' +
+      '<p style="color:var(--dash-text-muted);font-size:0.875rem;margin-bottom:1rem;">Mark providers as connected when API keys are configured in the LOQUIRA desktop app. Keys are never stored in the dashboard.</p>' +
       '<div class="dash-settings-card">' + providersHtml + '</div>' +
     '</div>';
 
@@ -497,16 +522,21 @@ async function loadAgents() {
 async function loadSettings() {
   if (!currentUser) return;
   dashboardData.settingsState = 'loading';
+  dashboardData.modelsState = 'loading';
   renderModelsView();
   renderSettingsView();
 
   try {
     dashboardData.settings = await fetchUserSettings(currentUser.uid);
     dashboardData.settingsState = 'loaded';
+    dashboardData.models = await ensureLoquiraModels(currentUser.uid, dashboardData.settings);
+    dashboardData.modelsState = 'loaded';
   } catch (err) {
     console.error('[LOQUIRA] Settings load error:', err);
     dashboardData.settings = {};
+    dashboardData.models = [];
     dashboardData.settingsState = 'loaded';
+    dashboardData.modelsState = 'error';
   }
 
   renderModelsView();
@@ -583,8 +613,12 @@ async function saveProviderConfig() {
       status: status,
       name: provider.name,
     });
+    dashboardData.settings[pendingProviderId] = { status: status, name: provider.name };
+    dashboardData.models = await syncLoquiraModels(currentUser.uid, dashboardData.settings);
+    dashboardData.modelsState = 'loaded';
     closeProviderModal();
-    await loadSettings();
+    renderModelsView();
+    renderSettingsView();
   } catch (err) {
     console.error('[LOQUIRA] Provider save error:', err);
     providerModalAlert.textContent = 'Could not save provider settings. Please try again.';

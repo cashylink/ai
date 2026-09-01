@@ -14,3 +14,6 @@ Thumbs.db
 # Env secrets (if added later)
 .env
 .env.*
+
+# Build output (regenerate with npm run dist)
+dist/

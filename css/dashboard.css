@@ -651,6 +651,41 @@ body.dashboard-page {
 }
 
 /* Model cards */
+.dash-models-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  margin-bottom: 1.25rem;
+  font-size: 0.875rem;
+  color: var(--dash-text-secondary);
+}
+
+.dash-models-summary-hint {
+  font-size: 0.75rem;
+  color: var(--dash-text-muted);
+}
+
+.dash-model-group {
+  margin-bottom: 1.75rem;
+}
+
+.dash-model-group-title {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--dash-text-muted);
+  margin-bottom: 0.75rem;
+}
+
+.dash-model-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 0.75rem;
+}
+
 .dash-model-card {
   padding: var(--space-4, 1rem) var(--space-5, 1.25rem);
   background: var(--dash-bg-elevated);
@@ -658,15 +693,59 @@ body.dashboard-page {
   border-radius: var(--dash-radius-lg);
 }
 
-.dash-model-card h3 {
-  font-size: var(--text-sm, 0.875rem);
-  font-weight: 600;
+.dash-model-card--muted {
+  opacity: 0.72;
+}
+
+.dash-model-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
   margin-bottom: 4px;
 }
 
-.dash-model-card p {
+.dash-model-status {
+  flex-shrink: 0;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 0.2rem 0.45rem;
+  border-radius: 999px;
+}
+
+.dash-model-status.available {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--dash-success);
+}
+
+.dash-model-status.unavailable {
+  background: rgba(100, 116, 139, 0.2);
+  color: var(--dash-text-muted);
+}
+
+.dash-model-card h3 {
+  font-size: var(--text-sm, 0.875rem);
+  font-weight: 600;
+  margin-bottom: 0;
+}
+
+.dash-model-meta {
   font-size: 12px;
   color: var(--dash-text-muted);
+}
+
+.dash-model-detail {
+  font-size: 12px;
+  color: var(--dash-text-secondary);
+  margin-top: 0.35rem;
+}
+
+.dash-model-hint {
+  font-size: 11px;
+  color: var(--dash-warning);
+  margin-top: 0.5rem;
 }
 
 /* Empty / Error / Loading states */

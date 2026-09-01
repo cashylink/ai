@@ -1,0 +1,10 @@
+{
+  "name": "loquira-site",
+  "version": "1.1.0",
+  "private": true,
+  "description": "LOQUIRA marketing site and user dashboard",
+  "scripts": {
+    "dist": "node scripts/build-dist.mjs",
+    "preview": "npm run dist && npx --yes serve dist -p 8888"
+  }
+}

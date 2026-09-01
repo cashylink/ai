@@ -4,6 +4,7 @@ import {
   addDoc,
   getDocs,
   setDoc,
+  writeBatch,
   query,
   orderBy,
   limit,
@@ -11,6 +12,11 @@ import {
   updateDoc,
 } from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js';
 import { db } from './firebase-config.js';
+import {
+  LOQUIRA_CATALOG_VERSION,
+  encodeModelDocId,
+  enrichCatalogWithAvailability,
+} from './loquira-models.js';
 
 function userCollection(uid, name) {
   return collection(db, 'users', uid, name);
@@ -116,6 +122,103 @@ export async function fetchUserSettings(uid) {
 export async function saveProviderSetting(uid, providerId, data) {
   const ref = doc(db, 'users', uid, 'settings', providerId);
   await setDoc(ref, { ...data, updatedAt: serverTimestamp() }, { merge: true });
+}
+
+function mapLoquiraModelDoc(d) {
+  const data = d.data();
+  return {
+    id: data.modelId || d.id,
+    name: data.name || 'Model',
+    detail: data.detail || '',
+    group: data.group || 'Other',
+    provider: data.provider || '',
+    providerLabel: data.providerLabel || '',
+    supportsVision: !!data.supportsVision,
+    supportsTools: data.supportsTools !== false,
+    supportsReasoning: !!data.supportsReasoning,
+    capabilities: Array.isArray(data.capabilities) ? data.capabilities : [],
+    available: !!data.available,
+    availabilityReason: data.availabilityReason || '',
+    pickerOrder: typeof data.pickerOrder === 'number' ? data.pickerOrder : 999,
+    catalogVersion: data.catalogVersion || '',
+    syncedAt: data.syncedAt?.toDate?.() || null,
+  };
+}
+
+/** Sync LOQUIRA app model catalog to Firestore (no API keys). */
+export async function syncLoquiraModels(uid, providerSettings) {
+  const enriched = enrichCatalogWithAvailability(providerSettings || {});
+  const batch = writeBatch(db);
+  const now = serverTimestamp();
+
+  enriched.forEach(function (model) {
+    const ref = doc(db, 'users', uid, 'loquiraModels', encodeModelDocId(model.id));
+    batch.set(ref, {
+      modelId: model.id,
+      name: model.name,
+      detail: model.detail,
+      group: model.group,
+      provider: model.provider,
+      providerLabel: model.providerLabel,
+      supportsVision: model.supportsVision,
+      supportsTools: model.supportsTools,
+      supportsReasoning: model.supportsReasoning,
+      capabilities: model.capabilities,
+      available: model.available,
+      availabilityReason: model.availabilityReason,
+      pickerOrder: model.pickerOrder,
+      catalogVersion: LOQUIRA_CATALOG_VERSION,
+      syncedAt: now,
+    }, { merge: true });
+  });
+
+  const metaRef = doc(db, 'users', uid, 'settings', 'loquira-sync');
+  batch.set(metaRef, {
+    catalogVersion: LOQUIRA_CATALOG_VERSION,
+    modelCount: enriched.length,
+    updatedAt: now,
+  }, { merge: true });
+
+  await batch.commit();
+  return enriched;
+}
+
+export async function fetchLoquiraModels(uid) {
+  try {
+    const snapshot = await getDocs(userCollection(uid, 'loquiraModels'));
+    if (snapshot.empty) {
+      return [];
+    }
+    const models = snapshot.docs.map(mapLoquiraModelDoc);
+    models.sort(function (a, b) {
+      return a.pickerOrder - b.pickerOrder;
+    });
+    return models;
+  } catch (err) {
+    if (err.code === 'permission-denied') throw err;
+    return [];
+  }
+}
+
+/** Load models from Firestore; seed/sync catalog when missing or outdated. */
+export async function ensureLoquiraModels(uid, providerSettings) {
+  const settings = providerSettings || {};
+  let models = await fetchLoquiraModels(uid);
+  const syncMeta = settings['loquira-sync'];
+  const needsSync =
+    models.length === 0 ||
+    syncMeta?.catalogVersion !== LOQUIRA_CATALOG_VERSION ||
+    models.some(function (m) {
+      return m.catalogVersion !== LOQUIRA_CATALOG_VERSION;
+    });
+
+  if (needsSync) {
+    models = await syncLoquiraModels(uid, settings);
+  } else {
+    models = enrichCatalogWithAvailability(settings);
+  }
+
+  return models;
 }
 
 export function formatRelativeTime(date) {
