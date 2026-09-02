@@ -5,6 +5,7 @@ import {
   resetPassword,
   getAuthErrorMessage,
   watchAuth,
+  logOut,
 } from './auth.js';
 import { initAnalytics } from './firebase-config.js';
 import { isDesktopAuthFlow, completeDesktopHandoff } from './desktop-auth.js';
@@ -63,6 +64,7 @@ async function handleDesktopSignIn(user) {
     await completeDesktopHandoff(user);
   } catch (err) {
     showAlert(desktopHandoffErrorMessage(err), 'error');
+    try { await logOut(); } catch (_) { /* allow retry */ }
   } finally {
     setLoading(false, true);
   }
