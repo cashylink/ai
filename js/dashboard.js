@@ -17,8 +17,8 @@ import {
   formatEgp,
   formatUsageTime,
   getEffectivePlans,
+  activatePlan,
 } from './saas-store.js';
-import { getIdTokenForSaas, postSaasPlanInterest } from './saas-api.js';
 
 initAnalytics();
 
@@ -121,12 +121,7 @@ function openPlanModal(plan) {
 
 async function savePlanInterest(plan) {
   if (!currentUser || !plan) return null;
-
-  const idToken = await getIdTokenForSaas(true);
-  if (!idToken) {
-    throw new Error('NOT_AUTHENTICATED');
-  }
-  return postSaasPlanInterest(idToken, plan);
+  return activatePlan(currentUser.uid, plan);
 }
 
 async function handlePlanModalConfirm() {
@@ -152,9 +147,14 @@ async function handlePlanModalConfirm() {
     renderBillingView();
     renderPlanSummary();
   } catch (err) {
-    console.error('[LOQUIRA] Plan interest save failed:', err);
+    console.error('[LOQUIRA] Plan activation failed:', err);
+    const code = err?.code || '';
+    let message = 'Could not activate your plan. Please try again.';
+    if (code === 'permission-denied') {
+      message = 'Firestore rules blocked plan activation. Publish the updated rules in Firebase Console, then try again.';
+    }
     if (planModalText) {
-      planModalText.textContent = 'Could not save your selection. Please try again.';
+      planModalText.textContent = message;
     }
     planModalConfirm.disabled = false;
     planModalConfirm.textContent = 'Try again';

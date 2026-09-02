@@ -8,6 +8,7 @@ import {
   doc,
   getDoc,
   getDocs,
+  setDoc,
   query,
   where,
   orderBy,
@@ -19,7 +20,17 @@ import {
   fetchSaasMe,
   fetchSaasPlans,
   mapSaasMeToSnapshot,
+  postSaasPlanInterest,
 } from './saas-api.js';
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+const PLAN_CREDITS = {
+  free: 500,
+  starter: 3000,
+  pro: 10000,
+  business: 30000,
+};
 
 /** Default catalog when Firestore / API plans are empty (matches Agent Server seed). */
 export const LOQUIRA_DEFAULT_PLANS = [
@@ -319,6 +330,89 @@ export async function fetchAccountSnapshot(uid) {
       hasCreditBalance: !!creditBalance,
     },
     source: 'firestore',
+  };
+}
+
+/** Activate plan: Worker API first, Firestore fallback (rules-validated writes). */
+export async function activatePlan(uid, plan) {
+  if (!uid || !plan?.id) throw new Error('INVALID_PLAN');
+
+  const idToken = await getIdTokenForSaas(true);
+  if (idToken) {
+    try {
+      return await postSaasPlanInterest(idToken, plan);
+    } catch (err) {
+      console.warn('[LOQUIRA] Worker activate failed, using Firestore:', err?.status || err?.message || err);
+    }
+  }
+
+  return activatePlanViaFirestore(uid, plan);
+}
+
+async function activatePlanViaFirestore(uid, plan) {
+  const planId = String(plan.id).toLowerCase();
+  const monthlyCredits = Number(plan.monthlyCredits) || PLAN_CREDITS[planId] || 0;
+  if (!PLAN_CREDITS[planId]) throw new Error('INVALID_PLAN');
+
+  const now = Date.now();
+  const periodEnd = now + 30 * DAY_MS;
+  const planName = plan.name || planId;
+
+  const subRef = doc(db, 'subscriptions', uid);
+  const existingSub = await getDoc(subRef);
+  const subscription = {
+    id: uid,
+    userId: uid,
+    planId,
+    status: 'active',
+    periodStart: now,
+    renewalDate: periodEnd,
+    autoRenew: true,
+    paymentProvider: 'none',
+    updatedAt: now,
+  };
+  if (!existingSub.exists()) {
+    subscription.createdAt = now;
+  }
+
+  const creditBalance = {
+    uid,
+    planId,
+    monthlyCredits,
+    usedCredits: 0,
+    reservedCredits: 0,
+    remainingCredits: monthlyCredits,
+    periodStart: now,
+    periodEnd,
+    updatedAt: now,
+  };
+
+  await Promise.all([
+    setDoc(subRef, subscription, { merge: true }),
+    setDoc(doc(db, 'creditBalances', uid), creditBalance, { merge: true }),
+    setDoc(doc(db, 'users', uid, 'planInterest', planId), {
+      userId: uid,
+      planId,
+      planName,
+      monthlyCredits,
+      status: 'active',
+      activatedAt: now,
+    }, { merge: true }),
+  ]);
+
+  return {
+    ok: true,
+    changed: true,
+    planId,
+    planName,
+    status: 'active',
+    allowance: {
+      planId,
+      planName,
+      monthlyCredits,
+      usedCredits: 0,
+      remainingCredits: monthlyCredits,
+    },
   };
 }
 

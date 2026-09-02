@@ -20,6 +20,35 @@ service cloud.firestore {
       allow read, write: if isOwner(userId);
     }
 
+    function isValidPlanId(planId) {
+      return planId == 'free' || planId == 'starter' || planId == 'pro' || planId == 'business';
+    }
+
+    function planCredits(planId) {
+      return planId == 'free' ? 500
+        : planId == 'starter' ? 3000
+        : planId == 'pro' ? 10000
+        : planId == 'business' ? 30000
+        : -1;
+    }
+
+    function isValidCreditBalanceWrite(uid) {
+      let planId = request.resource.data.planId;
+      let credits = planCredits(planId);
+      return request.resource.data.uid == uid
+        && isValidPlanId(planId)
+        && request.resource.data.monthlyCredits == credits
+        && request.resource.data.remainingCredits == credits
+        && request.resource.data.usedCredits == 0
+        && request.resource.data.reservedCredits == 0;
+    }
+
+    function isValidSubscriptionWrite(uid) {
+      return request.resource.data.userId == uid
+        && isValidPlanId(request.resource.data.planId)
+        && request.resource.data.status == 'active';
+    }
+
     match /users/{uid}/planInterest/{planId} {
       allow read, write: if isOwner(uid);
     }
@@ -44,12 +73,14 @@ service cloud.firestore {
 
     match /subscriptions/{uid} {
       allow read: if isOwner(uid) || isAdmin();
-      allow write: if isAdmin();
+      allow create, update: if isOwner(uid) && isValidSubscriptionWrite(uid);
+      allow delete: if false;
     }
 
     match /creditBalances/{uid} {
       allow read: if isOwner(uid) || isAdmin();
-      allow write: if false;
+      allow create, update: if isOwner(uid) && isValidCreditBalanceWrite(uid);
+      allow delete: if false;
     }
 
     match /usageLedger/{entryId} {
