@@ -1,0 +1,7 @@
+worker/node_modules
+worker/.wrangler
+node_modules
+.git
+dist
+.env.local
+.vercel

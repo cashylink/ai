@@ -1,0 +1,9 @@
+{
+  "rewrites": [
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "api.lokiara.com" }],
+      "destination": "https://loquira-auth.alkaptin2030.workers.dev/:path*"
+    }
+  ]
+}

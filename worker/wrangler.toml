@@ -3,8 +3,10 @@ main = "src/index.js"
 compatibility_date = "2024-09-01"
 workers_dev = true
 
-# Enable after lokiara.com zone is on Cloudflare account alkaptin2030@gmail.com:
-# routes = [{ pattern = "api.lokiara.com/*", zone_name = "lokiara.com" }]
+# Direct Cloudflare custom domain (enable after lokiara.com zone is on CF account alkaptin2030@gmail.com):
+# [[routes]]
+# pattern = "api.lokiara.com"
+# custom_domain = true
 
 [[kv_namespaces]]
 binding = "DESKTOP_AUTH"
