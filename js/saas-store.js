@@ -20,7 +20,6 @@ import {
   fetchSaasMe,
   fetchSaasPlans,
   mapSaasMeToSnapshot,
-  postSaasPlanInterest,
 } from './saas-api.js';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -333,33 +332,21 @@ export async function fetchAccountSnapshot(uid) {
   };
 }
 
-/** Activate plan: Worker API first, Firestore fallback (rules-validated writes). */
+/** Activate plan directly in Firestore (validated by security rules). */
 export async function activatePlan(uid, plan) {
   if (!uid || !plan?.id) throw new Error('INVALID_PLAN');
-
-  const idToken = await getIdTokenForSaas(true);
-  if (idToken) {
-    try {
-      return await postSaasPlanInterest(idToken, plan);
-    } catch (err) {
-      console.warn('[LOQUIRA] Worker activate failed, using Firestore:', err?.status || err?.message || err);
-    }
-  }
-
   return activatePlanViaFirestore(uid, plan);
 }
 
 async function activatePlanViaFirestore(uid, plan) {
   const planId = String(plan.id).toLowerCase();
-  const monthlyCredits = Number(plan.monthlyCredits) || PLAN_CREDITS[planId] || 0;
-  if (!PLAN_CREDITS[planId]) throw new Error('INVALID_PLAN');
+  const monthlyCredits = PLAN_CREDITS[planId];
+  if (!monthlyCredits) throw new Error('INVALID_PLAN');
 
   const now = Date.now();
   const periodEnd = now + 30 * DAY_MS;
   const planName = plan.name || planId;
 
-  const subRef = doc(db, 'subscriptions', uid);
-  const existingSub = await getDoc(subRef);
   const subscription = {
     id: uid,
     userId: uid,
@@ -369,11 +356,9 @@ async function activatePlanViaFirestore(uid, plan) {
     renewalDate: periodEnd,
     autoRenew: true,
     paymentProvider: 'none',
+    createdAt: now,
     updatedAt: now,
   };
-  if (!existingSub.exists()) {
-    subscription.createdAt = now;
-  }
 
   const creditBalance = {
     uid,
@@ -387,18 +372,33 @@ async function activatePlanViaFirestore(uid, plan) {
     updatedAt: now,
   };
 
-  await Promise.all([
-    setDoc(subRef, subscription, { merge: true }),
-    setDoc(doc(db, 'creditBalances', uid), creditBalance, { merge: true }),
-    setDoc(doc(db, 'users', uid, 'planInterest', planId), {
+  try {
+    await setDoc(doc(db, 'subscriptions', uid), subscription);
+  } catch (err) {
+    err.step = 'subscriptions';
+    throw err;
+  }
+
+  try {
+    await setDoc(doc(db, 'creditBalances', uid), creditBalance);
+  } catch (err) {
+    err.step = 'creditBalances';
+    throw err;
+  }
+
+  try {
+    await setDoc(doc(db, 'users', uid, 'planInterest', planId), {
       userId: uid,
       planId,
       planName,
       monthlyCredits,
       status: 'active',
       activatedAt: now,
-    }, { merge: true }),
-  ]);
+    });
+  } catch (err) {
+    err.step = 'planInterest';
+    throw err;
+  }
 
   return {
     ok: true,

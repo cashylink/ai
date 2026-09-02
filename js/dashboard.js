@@ -149,9 +149,12 @@ async function handlePlanModalConfirm() {
   } catch (err) {
     console.error('[LOQUIRA] Plan activation failed:', err);
     const code = err?.code || '';
+    const step = err?.step || '';
     let message = 'Could not activate your plan. Please try again.';
     if (code === 'permission-denied') {
-      message = 'Firestore rules blocked plan activation. Publish the updated rules in Firebase Console, then try again.';
+      message = step
+        ? 'Firestore blocked write to ' + step + '. Publish the full rules file in Firebase Console, then hard-refresh (Ctrl+Shift+R).'
+        : 'Firestore rules blocked plan activation. Publish the updated rules, then hard-refresh (Ctrl+Shift+R).';
     }
     if (planModalText) {
       planModalText.textContent = message;

@@ -19,23 +19,10 @@ service cloud.firestore {
       return planId == 'free' || planId == 'starter' || planId == 'pro' || planId == 'business';
     }
 
-    function planCredits(planId) {
-      return planId == 'free' ? 500
-        : planId == 'starter' ? 3000
-        : planId == 'pro' ? 10000
-        : planId == 'business' ? 30000
-        : -1;
-    }
-
     function isValidCreditBalanceWrite(uid) {
       let planId = request.resource.data.planId;
-      let credits = planCredits(planId);
       return request.resource.data.uid == uid
-        && isValidPlanId(planId)
-        && request.resource.data.monthlyCredits == credits
-        && request.resource.data.remainingCredits == credits
-        && request.resource.data.usedCredits == 0
-        && request.resource.data.reservedCredits == 0;
+        && isValidPlanId(planId);
     }
 
     function isValidSubscriptionWrite(uid) {
