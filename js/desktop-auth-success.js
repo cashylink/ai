@@ -7,31 +7,32 @@ import { openDesktopApp } from './desktop-auth.js';
 
 const COPY = {
   signingIn: 'جاري تسجيل الدخول…',
-  signedIn: 'تم تسجيل الدخول بنجاح',
-  workspaceReady: 'مساحة عمل LOQUIRA جاهزة.',
+  signedIn: 'تم تسجيل الدخول',
+  workspaceReady: 'مساحة عمل <span class="brand-ltr">LOQUIRA</span> جاهزة.',
   opening: 'جاري فتح LOQUIRA',
-  fallbackTitle: 'تعذّر فتح LOQUIRA تلقائياً',
-  fallbackBody: 'حسابك جاهز. افتح LOQUIRA للمتابعة.',
-  openApp: 'فتح LOQUIRA',
-  returnWeb: 'العودة إلى الموقع',
+  launchedTitle: 'تم تسجيل الدخول بنجاح',
+  launchedSubtitle: 'تم فتح LOQUIRA.',
+  launchedHint: 'يمكنك إغلاق هذه النافذة.',
+  fallbackPrompt: 'لم يتم فتح التطبيق تلقائيًا؟',
+  errorTitle: 'تعذر فتح LOQUIRA تلقائيًا',
+  errorSubtitle: 'يمكنك فتح التطبيق يدويًا للمتابعة.',
+  invalidSession: 'جلسة تسجيل الدخول غير صالحة أو منتهية.',
 };
 
 const TIMING = {
-  signIn: 380,
-  success: 720,
-  workspace: 1050,
-  launch: 1280,
-  fallbackDelay: 2800,
+  success: 520,
+  workspace: 880,
+  launch: 1100,
+  fallbackDelay: 4000,
 };
 
 const params = new URLSearchParams(window.location.search);
 const state = (params.get('state') || '').trim();
 
 const els = {
-  stage: document.getElementById('handoff-stage'),
+  cluster: document.getElementById('handoff-cluster'),
   spinner: document.getElementById('handoff-spinner'),
-  checkRing: document.getElementById('handoff-check-ring'),
-  checkIcon: document.getElementById('handoff-check-icon'),
+  check: document.getElementById('handoff-check'),
   title: document.getElementById('handoff-title'),
   subtitle: document.getElementById('handoff-subtitle'),
   status: document.getElementById('handoff-status'),
@@ -40,47 +41,80 @@ const els = {
   fallback: document.getElementById('handoff-fallback'),
   fallbackMsg: document.getElementById('handoff-fallback-msg'),
   openBtn: document.getElementById('open-app-btn'),
-  returnLink: document.getElementById('return-website'),
+  main: document.querySelector('.handoff-main'),
 };
 
 let launchAttempted = false;
 let fallbackVisible = false;
-let reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+let launchSucceeded = false;
+const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 function setTitle(text) {
   els.title.textContent = text;
 }
 
-function setSubtitle(text) {
-  els.subtitle.textContent = text;
+function setSubtitleHtml(html) {
+  if (!html) {
+    els.subtitle.innerHTML = '';
+    return;
+  }
+  els.subtitle.innerHTML = html;
 }
 
 function setStatus(text, showDots = false) {
+  if (!text && !showDots) {
+    els.status.hidden = true;
+    els.statusText.textContent = '';
+    return;
+  }
+  els.status.hidden = false;
   els.statusText.textContent = text;
   els.dots.hidden = !showDots;
 }
 
 function showSuccessCheck() {
   els.spinner.hidden = true;
-  els.checkRing.classList.add('is-visible');
-  els.checkIcon.classList.add('is-visible');
-  els.checkRing.setAttribute('aria-hidden', 'false');
+  els.check.hidden = false;
+  requestAnimationFrame(() => els.check.classList.add('is-visible'));
+  els.cluster?.classList.add('is-success');
+}
+
+function setBusy(busy) {
+  els.main?.setAttribute('aria-busy', busy ? 'true' : 'false');
+}
+
+function showLaunchSuccess() {
+  if (launchSucceeded) {
+    return;
+  }
+  launchSucceeded = true;
+  setBusy(false);
+  setTitle(COPY.launchedTitle);
+  setSubtitleHtml(COPY.launchedSubtitle);
+  setStatus(COPY.launchedHint, false);
+  els.fallback.hidden = true;
 }
 
 function showFallback(isError = false) {
-  if (fallbackVisible) {
+  if (fallbackVisible || launchSucceeded) {
     return;
   }
   fallbackVisible = true;
+  setBusy(false);
 
   if (isError) {
-    els.stage.classList.add('is-error');
-    setTitle(COPY.fallbackTitle);
-    setSubtitle(COPY.fallbackBody);
+    els.cluster?.classList.add('is-error');
+    els.spinner.hidden = true;
+    els.check.hidden = false;
+    els.check.classList.add('is-visible');
+    setTitle(COPY.errorTitle);
+    setSubtitleHtml(COPY.errorSubtitle);
     setStatus('', false);
+    els.fallbackMsg.textContent = COPY.errorSubtitle;
+  } else {
+    els.fallbackMsg.textContent = COPY.fallbackPrompt;
   }
 
-  els.fallbackMsg.textContent = COPY.fallbackBody;
   els.fallback.hidden = false;
   requestAnimationFrame(() => els.fallback.classList.add('is-visible'));
 }
@@ -95,30 +129,35 @@ function attemptLaunch() {
 
   launchAttempted = true;
   setTitle(COPY.signedIn);
-  setSubtitle(COPY.workspaceReady);
+  setSubtitleHtml(COPY.workspaceReady);
   setStatus(`${COPY.opening}…`, true);
 
   let cleaned = false;
-  const cleanup = () => {
-    if (cleaned) return;
+  const cleanup = (succeeded = false) => {
+    if (cleaned) {
+      return;
+    }
     cleaned = true;
     window.removeEventListener('blur', onBlur);
     document.removeEventListener('visibilitychange', onVisibility);
     clearTimeout(fallbackTimer);
+    if (succeeded) {
+      showLaunchSuccess();
+    }
   };
 
-  const onBlur = () => cleanup();
+  const onBlur = () => cleanup(true);
   const onVisibility = () => {
     if (document.hidden) {
-      cleanup();
+      cleanup(true);
     }
   };
 
   const fallbackTimer = setTimeout(() => {
-    cleanup();
-    if (!document.hidden) {
-      showFallback();
+    if (!document.hidden && !launchSucceeded) {
+      showFallback(false);
     }
+    cleanup(false);
   }, TIMING.fallbackDelay);
 
   window.addEventListener('blur', onBlur);
@@ -127,24 +166,26 @@ function attemptLaunch() {
   try {
     openDesktopApp(state);
   } catch {
-    cleanup();
+    cleanup(false);
     showFallback(true);
   }
 }
 
 function runSequence() {
-  const scale = reducedMotion ? 0.35 : 1;
+  const scale = reducedMotion ? 0.4 : 1;
   const t = (ms) => Math.round(ms * scale);
 
   setTitle(COPY.signingIn);
-  setSubtitle('');
+  setSubtitleHtml('');
   setStatus('', false);
   els.spinner.hidden = false;
+  els.check.hidden = true;
+  els.check.classList.remove('is-visible');
 
   setTimeout(() => {
     showSuccessCheck();
     setTitle(COPY.signedIn);
-    setSubtitle(COPY.workspaceReady);
+    setSubtitleHtml(COPY.workspaceReady);
     setStatus('', false);
   }, t(TIMING.success));
 
@@ -161,12 +202,10 @@ els.openBtn?.addEventListener('click', () => {
   }
 });
 
-els.returnLink?.setAttribute('href', 'index.html');
-
 if (!state) {
-  els.stage.classList.add('is-error');
-  setTitle(COPY.fallbackTitle);
-  setSubtitle('جلسة تسجيل الدخول غير صالحة أو منتهية.');
+  els.cluster?.classList.add('is-error');
+  setTitle(COPY.errorTitle);
+  setSubtitleHtml(COPY.invalidSession);
   els.spinner.hidden = true;
   showFallback(true);
 } else {

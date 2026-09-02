@@ -9,7 +9,7 @@
   <link rel="icon" type="image/png" sizes="32x32" href="favicon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/loquira.css" />
   <link rel="stylesheet" href="css/desktop-auth-success.css" />
 </head>
@@ -17,42 +17,40 @@
   <div class="handoff-ambient" aria-hidden="true"></div>
 
   <main class="handoff-main" role="main" aria-live="polite" aria-busy="true">
-    <header class="handoff-brand" aria-label="LOQUIRA">
+    <header class="handoff-brand" aria-label="LOQUIRA" dir="ltr">
       <span class="logo-mark" aria-hidden="true">L</span>
-      <span>LOQUIRA</span>
+      <span class="brand-name">LOQUIRA</span>
     </header>
 
-    <section class="handoff-stage" id="handoff-stage" aria-labelledby="handoff-title">
-      <div class="handoff-check-wrap">
+    <div class="handoff-cluster" id="handoff-cluster">
+      <div class="handoff-glow" aria-hidden="true"></div>
+
+      <div class="handoff-indicator" id="handoff-indicator">
         <div class="handoff-spinner" id="handoff-spinner" role="status" aria-label="جاري التحميل"></div>
-        <div class="handoff-check-ring" id="handoff-check-ring" aria-hidden="true">
-          <div class="handoff-check-icon" id="handoff-check-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M20 6L9 17l-5-5" />
-            </svg>
-          </div>
+        <div class="handoff-check" id="handoff-check" hidden aria-hidden="true">
+          <svg class="handoff-check-svg" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <circle class="handoff-check-circle" cx="12" cy="12" r="10" />
+            <path class="handoff-check-mark" d="M8 12.2l2.4 2.4L16 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
         </div>
       </div>
 
-      <h1 class="handoff-title" id="handoff-title">جاري تسجيل الدخول…</h1>
-      <p class="handoff-subtitle" id="handoff-subtitle"></p>
+      <div class="handoff-copy">
+        <h1 class="handoff-title" id="handoff-title">جاري تسجيل الدخول…</h1>
+        <p class="handoff-subtitle" id="handoff-subtitle"></p>
+      </div>
 
-      <div class="handoff-status" id="handoff-status">
+      <div class="handoff-status" id="handoff-status" hidden>
         <span id="handoff-status-text"></span>
-        <span class="handoff-dots" id="handoff-dots" hidden aria-hidden="true">
+        <span class="handoff-dots" id="handoff-dots" aria-hidden="true">
           <span></span><span></span><span></span>
         </span>
       </div>
-    </section>
+    </div>
 
     <div class="handoff-fallback" id="handoff-fallback" hidden>
       <p class="handoff-fallback-msg" id="handoff-fallback-msg"></p>
-      <button type="button" class="btn-handoff-primary" id="open-app-btn">
-        فتح LOQUIRA
-      </button>
-      <a href="index.html" class="btn-handoff-secondary" id="return-website">
-        العودة إلى الموقع
-      </a>
+      <button type="button" class="btn-handoff" id="open-app-btn">فتح LOQUIRA</button>
     </div>
   </main>
 
