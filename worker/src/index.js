@@ -83,6 +83,9 @@ function corsResponse(response, status, request) {
 
 function isAllowedOrigin(origin) {
   if (!origin) return true;
+  // LOQUIRA Desktop (Electron workbench + webviews) — not a browser tab on lokiara.com
+  if (origin.startsWith('vscode-file://')) return true;
+  if (origin.startsWith('vscode-webview://')) return true;
   try {
     const u = new URL(origin);
     return u.hostname === 'www.lokiara.com' || u.hostname === 'lokiara.com' || u.hostname === 'api.lokiara.com' || u.hostname === 'localhost';
