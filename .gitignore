@@ -17,3 +17,6 @@ Thumbs.db
 
 # Build output (regenerate with npm run dist)
 dist/
+
+.vercel
+.env*
