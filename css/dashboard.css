@@ -1211,11 +1211,48 @@ body.dashboard-page {
   border: 1px solid var(--dash-border);
   border-radius: var(--dash-radius);
   padding: 1rem;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.dash-plan-option:hover {
+  border-color: var(--dash-accent-soft);
+}
+
+.dash-plan-option.selected {
+  border-color: var(--dash-accent);
+  box-shadow: 0 0 0 1px var(--dash-accent-soft);
 }
 
 .dash-plan-option.current {
   border-color: var(--dash-accent);
   box-shadow: 0 0 0 1px var(--dash-accent-soft);
+}
+
+.dash-plan-option-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.dash-plan-features {
+  margin: 0.75rem 0 1rem;
+  padding-left: 1.1rem;
+  color: var(--dash-text-secondary);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+.dash-plan-features li {
+  margin-bottom: 0.25rem;
+}
+
+.dash-billing-actions {
+  margin-top: 1.25rem;
+  display: flex;
+  justify-content: flex-end;
 }
 
 .dash-plan-option-price {

@@ -1,5 +1,6 @@
 import { watchAuth, logOut } from './auth.js';
-import { initAnalytics } from './firebase-config.js';
+import { initAnalytics, db } from './firebase-config.js';
+import { doc, setDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js';
 import {
   fetchProjects,
   createProject,
@@ -16,6 +17,7 @@ import {
   formatCredits,
   formatEgp,
   formatUsageTime,
+  getEffectivePlans,
 } from './saas-store.js';
 
 initAnalytics();
@@ -58,6 +60,191 @@ const modalCancel = document.getElementById('modal-cancel');
 const modalAlert = document.getElementById('modal-alert');
 const modalSubmit = document.getElementById('modal-submit');
 const newProjectHeaderBtn = document.getElementById('new-project-header-btn');
+const planModal = document.getElementById('plan-modal');
+const planModalTitle = document.getElementById('plan-modal-title');
+const planModalText = document.getElementById('plan-modal-text');
+const planModalConfirm = document.getElementById('plan-modal-confirm');
+const planModalCancel = document.getElementById('plan-modal-cancel');
+
+let selectedBillingPlanId = null;
+let pendingPlanSelection = null;
+
+function formatTierLabel(tier) {
+  const labels = {
+    FAST: 'Fast',
+    MEDIUM: 'Medium',
+    HIGH: 'High',
+    PREMIUM: 'Premium',
+  };
+  return labels[tier] || tier;
+}
+
+function renderPlanFeatures(plan) {
+  const features = Array.isArray(plan.features) && plan.features.length
+    ? plan.features
+    : [
+      formatCredits(plan.monthlyCredits) + ' Credits / month',
+      (plan.allowedTiers || []).map(formatTierLabel).join(', ') + ' models',
+    ];
+  return features.map(function (feature) {
+    return '<li>' + escapeHtml(feature) + '</li>';
+  }).join('');
+}
+
+function closePlanModal() {
+  if (!planModal) return;
+  planModal.classList.remove('open');
+  planModal.hidden = true;
+  pendingPlanSelection = null;
+  if (planModalConfirm) planModalConfirm.disabled = false;
+}
+
+function openPlanModal(plan) {
+  if (!planModal || !plan) return;
+  pendingPlanSelection = plan;
+  const priceLine = plan.priceEGP > 0 ? formatEgp(plan.priceEGP) + ' / month' : 'Free';
+  if (planModalTitle) planModalTitle.textContent = 'Subscribe to LOQUIRA ' + plan.name;
+  if (planModalText) {
+    planModalText.innerHTML =
+      '<strong>' + escapeHtml(priceLine) + '</strong> — ' +
+      formatCredits(plan.monthlyCredits) + ' Credits per month.<br><br>' +
+      'Online checkout is being finalized. Confirm your choice and we will save your plan preference. ' +
+      'You will be notified when payment is available — no charge until then.';
+  }
+  if (planModalConfirm) {
+    planModalConfirm.textContent = 'Confirm selection';
+    planModalConfirm.disabled = false;
+  }
+  planModal.hidden = false;
+  planModal.classList.add('open');
+  planModalConfirm?.focus();
+}
+
+async function savePlanInterest(plan) {
+  if (!currentUser || !plan) return;
+  const ref = doc(db, 'users', currentUser.uid, 'planInterest', plan.id);
+  await setDoc(ref, {
+    planId: plan.id,
+    planName: plan.name,
+    priceEGP: plan.priceEGP ?? 0,
+    monthlyCredits: plan.monthlyCredits ?? 0,
+    requestedAt: serverTimestamp(),
+    email: currentUser.email || null,
+  }, { merge: true });
+}
+
+async function handlePlanModalConfirm() {
+  const plan = pendingPlanSelection;
+  if (!plan || !planModalConfirm) return;
+
+  planModalConfirm.disabled = true;
+  planModalConfirm.textContent = 'Saving…';
+
+  try {
+    await savePlanInterest(plan);
+    selectedBillingPlanId = plan.id;
+    if (planModalText) {
+      planModalText.innerHTML =
+        '<span class="dash-badge completed">Plan preference saved</span><br><br>' +
+        'You selected <strong>LOQUIRA ' + escapeHtml(plan.name) + '</strong>. ' +
+        'We will notify you when checkout is ready.';
+    }
+    if (planModalTitle) planModalTitle.textContent = 'Selection saved';
+    planModalConfirm.textContent = 'Done';
+    planModalConfirm.disabled = false;
+    renderBillingView();
+  } catch (err) {
+    console.error('[LOQUIRA] Plan interest save failed:', err);
+    if (planModalText) {
+      planModalText.textContent = 'Could not save your selection. Please try again.';
+    }
+    planModalConfirm.disabled = false;
+    planModalConfirm.textContent = 'Try again';
+  }
+}
+
+function bindBillingViewEvents() {
+  const container = document.getElementById('billing-container');
+  if (!container) return;
+
+  container.querySelectorAll('[data-select-plan]').forEach(function (card) {
+    card.addEventListener('click', function (e) {
+      if (e.target.closest('[data-plan-action]')) return;
+      selectedBillingPlanId = card.dataset.selectPlan;
+      container.querySelectorAll('[data-select-plan]').forEach(function (el) {
+        el.classList.toggle('selected', el.dataset.selectPlan === selectedBillingPlanId);
+      });
+      updateBillingContinueButton();
+    });
+  });
+
+  container.querySelector('#billing-continue-btn')?.addEventListener('click', function () {
+    const plans = getEffectivePlans(dashboardData.account?.plans || []);
+    const currentPlanId = dashboardData.account?.summary?.planId || 'free';
+    const plan = plans.find(function (p) { return p.id === selectedBillingPlanId; });
+    if (!plan) return;
+
+    if (plan.id === currentPlanId) {
+      if (planModalTitle) planModalTitle.textContent = 'Current plan';
+      if (planModalText) {
+        planModalText.textContent = 'You are already on LOQUIRA ' + plan.name + '.';
+      }
+      if (planModalConfirm) planModalConfirm.textContent = 'OK';
+      pendingPlanSelection = null;
+      planModal.hidden = false;
+      planModal.classList.add('open');
+      return;
+    }
+
+    if (plan.priceEGP <= 0) {
+      if (planModalTitle) planModalTitle.textContent = 'LOQUIRA Free';
+      if (planModalText) {
+        planModalText.textContent =
+          'LOQUIRA Free is your default plan. Paid checkout is required to upgrade to Starter, Pro, or Business.';
+      }
+      if (planModalConfirm) planModalConfirm.textContent = 'OK';
+      pendingPlanSelection = null;
+      planModal.hidden = false;
+      planModal.classList.add('open');
+      return;
+    }
+
+    openPlanModal(plan);
+  });
+
+  container.querySelectorAll('[data-plan-action]').forEach(function (btn) {
+    btn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      selectedBillingPlanId = btn.dataset.planAction;
+      container.querySelectorAll('[data-select-plan]').forEach(function (el) {
+        el.classList.toggle('selected', el.dataset.selectPlan === selectedBillingPlanId);
+      });
+      updateBillingContinueButton();
+      container.querySelector('#billing-continue-btn')?.click();
+    });
+  });
+}
+
+function updateBillingContinueButton() {
+  const btn = document.getElementById('billing-continue-btn');
+  if (!btn) return;
+  const plans = getEffectivePlans(dashboardData.account?.plans || []);
+  const plan = plans.find(function (p) { return p.id === selectedBillingPlanId; });
+  if (!plan) {
+    btn.disabled = true;
+    btn.textContent = 'Select a plan';
+    return;
+  }
+  const currentPlanId = dashboardData.account?.summary?.planId || 'free';
+  btn.disabled = false;
+  if (plan.id === currentPlanId) {
+    btn.textContent = 'Current plan';
+  } else if (plan.priceEGP <= 0) {
+    btn.textContent = 'Switch to Free';
+  } else {
+    btn.textContent = 'Continue with ' + plan.name;
+  }
+}
 
 function escapeHtml(str) {
   const div = document.createElement('div');
@@ -502,11 +689,15 @@ function renderBillingView() {
 
   const snap = dashboardData.account;
   const s = snap?.summary;
-  const allPlans = snap?.plans || [];
+  const allPlans = getEffectivePlans(snap?.plans || []);
 
   if (!s) {
     container.innerHTML = renderEmptyState('Billing unavailable', 'Unable to load billing data.', null, null);
     return;
+  }
+
+  if (!selectedBillingPlanId) {
+    selectedBillingPlanId = s.planId || allPlans[0]?.id || 'free';
   }
 
   const renewal = dashboardData.account?.subscription?.renewalDate;
@@ -523,20 +714,29 @@ function renderBillingView() {
       '</div>' +
     '</div>';
 
-  html += '<div class="dash-section"><h2>Available plans</h2><div class="dash-plans-grid">';
-  (allPlans.length ? allPlans : []).forEach(function (plan) {
+  html += '<div class="dash-section"><h2>Choose a plan</h2><p class="dash-muted">Select a plan below, then continue. Online payment will be enabled soon.</p>';
+  html += '<div class="dash-plans-grid">';
+  allPlans.forEach(function (plan) {
     const isCurrent = plan.id === s.planId;
+    const isSelected = plan.id === selectedBillingPlanId;
     html +=
-      '<div class="dash-plan-option' + (isCurrent ? ' current' : '') + '">' +
-        '<h3>' + escapeHtml(plan.name) + '</h3>' +
+      '<div class="dash-plan-option' + (isCurrent ? ' current' : '') + (isSelected ? ' selected' : '') + '" data-select-plan="' + escapeHtml(plan.id) + '" role="button" tabindex="0">' +
+        '<div class="dash-plan-option-header">' +
+          '<h3>LOQUIRA ' + escapeHtml(plan.name) + '</h3>' +
+          (isCurrent ? '<span class="dash-badge completed">Current</span>' : '') +
+        '</div>' +
         '<div class="dash-plan-option-price">' + (plan.priceEGP > 0 ? formatEgp(plan.priceEGP) + '/mo' : 'Free') + '</div>' +
         '<p class="dash-muted">' + formatCredits(plan.monthlyCredits) + ' Credits / month</p>' +
+        '<ul class="dash-plan-features">' + renderPlanFeatures(plan) + '</ul>' +
         (isCurrent
-          ? '<span class="dash-badge completed">Current</span>'
-          : '<button type="button" class="dash-btn-secondary" disabled title="Payment gateway coming soon">Change plan</button>') +
+          ? '<button type="button" class="dash-btn-ghost" data-plan-action="' + escapeHtml(plan.id) + '">View plan</button>'
+          : '<button type="button" class="dash-btn-secondary" data-plan-action="' + escapeHtml(plan.id) + '">Select ' + escapeHtml(plan.name) + '</button>') +
       '</div>';
   });
-  html += '</div><p class="dash-muted dash-billing-note">Plan changes require payment provider integration — checkout is not enabled yet.</p></div>';
+  html += '</div>';
+  html += '<div class="dash-billing-actions">' +
+    '<button type="button" class="dash-btn-primary" id="billing-continue-btn">Select a plan</button>' +
+  '</div></div>';
 
   const products = snap.creditProducts || [];
   if (products.length) {
@@ -553,6 +753,8 @@ function renderBillingView() {
   }
 
   container.innerHTML = html;
+  bindBillingViewEvents();
+  updateBillingContinueButton();
 }
 
 function renderOverview() {
@@ -786,14 +988,14 @@ document.querySelectorAll('.dash-nav-item[data-view]').forEach(function (btn) {
   });
 });
 
-document.querySelectorAll('[data-view]').forEach(function (el) {
-  if (el.classList.contains('dash-nav-item')) return;
-  el.addEventListener('click', function () {
-    navigateTo(el.dataset.view);
-  });
-});
-
 document.addEventListener('click', function (e) {
+  const viewEl = e.target.closest('[data-view]');
+  if (viewEl && !viewEl.classList.contains('dash-nav-item')) {
+    e.preventDefault();
+    navigateTo(viewEl.dataset.view);
+    return;
+  }
+
   const actionEl = e.target.closest('[data-action]');
   if (actionEl) {
     handleQuickAction(actionEl.dataset.action);
@@ -840,10 +1042,24 @@ document.getElementById('workspace-notice-modal').addEventListener('click', func
   if (e.target.id === 'workspace-notice-modal') closeWorkspaceNotice();
 });
 
+planModalCancel?.addEventListener('click', closePlanModal);
+planModal?.addEventListener('click', function (e) {
+  if (e.target === planModal) closePlanModal();
+});
+planModalConfirm?.addEventListener('click', function () {
+  const label = planModalConfirm.textContent || '';
+  if (label === 'Done' || label === 'OK') {
+    closePlanModal();
+    return;
+  }
+  handlePlanModalConfirm();
+});
+
 document.addEventListener('keydown', function (e) {
   if (e.key === 'Escape') {
     closeProjectModal();
     closeWorkspaceNotice();
+    closePlanModal();
     closeSidebar();
     closeUserMenu();
   }

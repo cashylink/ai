@@ -17,8 +17,62 @@ import { db } from './firebase-config.js';
 import {
   getIdTokenForSaas,
   fetchSaasMe,
+  fetchSaasPlans,
   mapSaasMeToSnapshot,
 } from './saas-api.js';
+
+/** Default catalog when Firestore / API plans are empty (matches Agent Server seed). */
+export const LOQUIRA_DEFAULT_PLANS = [
+  {
+    id: 'free',
+    name: 'Free',
+    priceEGP: 0,
+    monthlyCredits: 500,
+    allowedTiers: ['FAST'],
+    active: true,
+    sortOrder: 0,
+    isDefault: true,
+    features: ['500 Credits / month', 'Fast models', 'Basic agent', 'Vision'],
+  },
+  {
+    id: 'starter',
+    name: 'Starter',
+    priceEGP: 149,
+    monthlyCredits: 3000,
+    allowedTiers: ['FAST', 'MEDIUM'],
+    active: true,
+    sortOrder: 1,
+    features: ['3,000 Credits / month', 'Fast + Medium models', 'Full agent', 'Vision'],
+  },
+  {
+    id: 'pro',
+    name: 'Pro',
+    priceEGP: 349,
+    monthlyCredits: 10000,
+    allowedTiers: ['FAST', 'MEDIUM', 'HIGH'],
+    active: true,
+    sortOrder: 2,
+    features: ['10,000 Credits / month', 'Fast + Medium + High models', 'Advanced agent', 'Priority routing'],
+  },
+  {
+    id: 'business',
+    name: 'Business',
+    priceEGP: 799,
+    monthlyCredits: 30000,
+    allowedTiers: ['FAST', 'MEDIUM', 'HIGH', 'PREMIUM'],
+    active: true,
+    sortOrder: 3,
+    features: ['30,000 Credits / month', 'All tiers including Premium', 'Team-scale concurrency', 'Priority support'],
+  },
+];
+
+export function getEffectivePlans(plans) {
+  const list = Array.isArray(plans) ? plans.filter(function (p) { return p && p.active !== false; }) : [];
+  if (list.length > 0) {
+    return list.slice().sort(function (a, b) { return (a.sortOrder ?? 0) - (b.sortOrder ?? 0); });
+  }
+  return LOQUIRA_DEFAULT_PLANS.slice();
+}
 
 function monthKey(ts = Date.now()) {
   const d = new Date(ts);
@@ -46,11 +100,10 @@ export async function fetchPlansCatalog() {
         features: data.features || [],
       };
     });
-    plans.sort(function (a, b) { return a.sortOrder - b.sortOrder; });
-    return plans;
+    return getEffectivePlans(plans);
   } catch (err) {
     console.warn('[LOQUIRA] Plans load failed:', err);
-    return [];
+    return getEffectivePlans([]);
   }
 }
 
@@ -191,7 +244,18 @@ export async function fetchAccountSnapshot(uid) {
         fetchCreditProducts(),
       ]);
       if (me?.allowance) {
-        return mapSaasMeToSnapshot(me, recentUsage, creditProducts);
+        const snapshot = mapSaasMeToSnapshot(me, recentUsage, creditProducts);
+        if (!snapshot.plans?.length) {
+          try {
+            const plansPayload = await fetchSaasPlans(idToken);
+            snapshot.plans = getEffectivePlans(plansPayload?.plans || plansPayload);
+          } catch {
+            snapshot.plans = getEffectivePlans([]);
+          }
+        } else {
+          snapshot.plans = getEffectivePlans(snapshot.plans);
+        }
+        return snapshot;
       }
     }
   } catch (err) {
@@ -207,8 +271,12 @@ export async function fetchAccountSnapshot(uid) {
     fetchCreditProducts(),
   ]);
 
+  const effectivePlans = getEffectivePlans(plans);
   const planId = creditBalance?.planId || subscription?.planId || 'free';
-  const plan = plans.find(function (p) { return p.id === planId; }) || plans.find(function (p) { return p.isDefault; }) || plans[0] || null;
+  const plan = effectivePlans.find(function (p) { return p.id === planId; })
+    || effectivePlans.find(function (p) { return p.isDefault; })
+    || effectivePlans[0]
+    || null;
 
   const monthlyCredits = creditBalance?.monthlyCredits ?? plan?.monthlyCredits ?? 0;
   const usedCredits = creditBalance?.usedCredits ?? usageMonthly?.creditsUsed ?? 0;
@@ -231,7 +299,7 @@ export async function fetchAccountSnapshot(uid) {
   }
 
   return {
-    plans,
+    plans: effectivePlans,
     plan,
     subscription,
     creditBalance,
