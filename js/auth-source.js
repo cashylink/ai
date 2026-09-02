@@ -15,8 +15,7 @@ export function getAuthSource() {
     return AUTH_SOURCE.WEB;
   }
   const state = (params.get('state') || '').trim();
-  const agentPort = parseInt(params.get('agentPort') || '', 10);
-  if (!state || !Number.isFinite(agentPort)) {
+  if (!state) {
     return AUTH_SOURCE.WEB;
   }
   return AUTH_SOURCE.DESKTOP;
@@ -28,12 +27,12 @@ export function ensureWebAuthUrl() {
     return;
   }
   const params = new URLSearchParams(window.location.search);
-  if (!params.has('client') && !params.has('agentPort') && !params.has('state')) {
+  if (!params.has('client') && !params.has('state')) {
     return;
   }
   params.delete('client');
-  params.delete('agentPort');
   params.delete('state');
+  params.delete('agentPort');
   const qs = params.toString();
   const clean = window.location.pathname + (qs ? `?${qs}` : '') + window.location.hash;
   window.history.replaceState(null, '', clean);

@@ -1,10 +1,11 @@
 /**
  * Desktop app sign-in handoff (LOQUIRA ↔ www.lokiara.com).
- * When login.html is opened with ?client=desktop&state=...&agentPort=...,
- * after Firebase auth completes we POST tokens to the local agent server.
+ * login.html?client=desktop&state=... — after Firebase auth, POST tokens to local agent server.
+ * Tokens travel in POST body only (never in URL or localStorage).
  */
 
 const DESKTOP_DEEP_LINK = 'forge-ai://forge-ai.forge-ai/auth-callback';
+const DEFAULT_AGENT_PORTS = [37845, 38473];
 
 let handoffCompleted = false;
 
@@ -13,15 +14,38 @@ export function getDesktopAuthParams() {
   if (params.get('client') !== 'desktop') return null;
   const state = (params.get('state') || '').trim();
   if (!state) return null;
-  const agentPort = parseInt(params.get('agentPort') || '37845', 10);
-  return {
-    state,
-    agentPort: Number.isFinite(agentPort) ? agentPort : 37845,
-  };
+  return { state };
 }
 
 export function isDesktopAuthFlow() {
   return getDesktopAuthParams() !== null;
+}
+
+/**
+ * Discover the local LOQUIRA agent server port for a pending desktop login state.
+ * @param {string} state
+ */
+async function resolveAgentHandoffPort(state) {
+  const ports = [...DEFAULT_AGENT_PORTS];
+  for (let i = 0; i < 20; i++) {
+    ports.push(37845 + i);
+  }
+  const seen = new Set();
+  for (const port of ports) {
+    if (seen.has(port)) continue;
+    seen.add(port);
+    try {
+      const r = await fetch(
+        `http://127.0.0.1:${port}/api/auth/desktop-handoff/ping?state=${encodeURIComponent(state)}`,
+        { method: 'GET', mode: 'cors' },
+      );
+      if (r.ok) {
+        const j = await r.json();
+        if (j.ok && j.port) return j.port;
+      }
+    } catch (_) { /* agent not on this port */ }
+  }
+  return DEFAULT_AGENT_PORTS[0];
 }
 
 /**
@@ -41,7 +65,8 @@ export async function completeDesktopHandoff(user) {
     photoURL: user.photoURL || '',
   };
 
-  const handoffUrl = `http://127.0.0.1:${params.agentPort}/api/auth/desktop-handoff`;
+  const agentPort = await resolveAgentHandoffPort(params.state);
+  const handoffUrl = `http://127.0.0.1:${agentPort}/api/auth/desktop-handoff`;
   const resp = await fetch(handoffUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -68,6 +93,7 @@ export async function completeDesktopHandoff(user) {
   return true;
 }
 
+/** Open LOQUIRA via custom protocol — state only, no tokens. */
 export function openDesktopApp(state) {
   const q = state ? `?state=${encodeURIComponent(state)}` : '';
   window.location.href = `${DESKTOP_DEEP_LINK}${q}`;

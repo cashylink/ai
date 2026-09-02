@@ -10,13 +10,16 @@ import { isDesktopAuthFlow, completeDesktopHandoff } from './desktop-auth.js';
 import { ensureWebAuthUrl } from './auth-source.js';
 
 initAnalytics();
-ensureWebAuthUrl();
+
+const desktopFlow = isDesktopAuthFlow();
+if (!desktopFlow) {
+  ensureWebAuthUrl();
+}
 
 const form = document.getElementById('signup-form');
 const alertEl = document.getElementById('auth-alert');
 const submitBtn = document.getElementById('submit-btn');
 const googleBtn = document.getElementById('google-btn');
-const desktopFlow = isDesktopAuthFlow();
 
 watchAuth(async function (user) {
   if (!user) return;
@@ -24,7 +27,7 @@ watchAuth(async function (user) {
     try {
       await completeDesktopHandoff(user);
     } catch (err) {
-      showAlert('تعذر ربط الحساب بالتطبيق: ' + (err.message || 'خطأ غير معروف'), 'error');
+      showAlert('تم تسجيل الدخول، لكن تعذر إكمال تسجيل الدخول إلى تطبيق LOQUIRA.', 'error');
     }
     return;
   }
@@ -38,7 +41,7 @@ handleGoogleRedirectResult()
       try {
         await completeDesktopHandoff(user);
       } catch (err) {
-        showAlert('تعذر ربط الحساب بالتطبيق: ' + (err.message || 'خطأ غير معروف'), 'error');
+        showAlert('تم تسجيل الدخول، لكن تعذر إكمال تسجيل الدخول إلى تطبيق LOQUIRA.', 'error');
       }
       return;
     }
@@ -68,7 +71,11 @@ function setLoading(loading, googleOnly) {
 async function afterSignIn(user) {
   if (!user) return;
   if (desktopFlow) {
-    await completeDesktopHandoff(user);
+    try {
+      await completeDesktopHandoff(user);
+    } catch (err) {
+      showAlert('تم تسجيل الدخول، لكن تعذر إكمال تسجيل الدخول إلى تطبيق LOQUIRA.', 'error');
+    }
     return;
   }
   window.location.href = 'workspace.html';
