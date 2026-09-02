@@ -104,6 +104,51 @@ async function listFirestoreCollection(env, collection, token, pageSize = 20) {
   });
 }
 
+function objToFirestoreFields(obj) {
+  const fields = {};
+  for (const [k, v] of Object.entries(obj)) {
+    if (v === null || v === undefined) continue;
+    if (typeof v === 'string') {
+      if (/^\d{4}-\d{2}-\d{2}T/.test(v)) {
+        fields[k] = { timestampValue: v };
+      } else {
+        fields[k] = { stringValue: v };
+      }
+    } else if (typeof v === 'number') {
+      fields[k] = Number.isInteger(v) ? { integerValue: String(v) } : { doubleValue: v };
+    } else if (typeof v === 'boolean') {
+      fields[k] = { booleanValue: v };
+    }
+  }
+  return fields;
+}
+
+async function setFirestoreDoc(env, docPath, data, token) {
+  const projectId = env.FIREBASE_PROJECT_ID || 'aiprogekt-155e1';
+  const url = `${FIRESTORE_BASE}/projects/${projectId}/databases/(default)/documents/${docPath}`;
+  const resp = await fetch(url, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ fields: objToFirestoreFields(data) }),
+  });
+  if (!resp.ok) {
+    const detail = await resp.text();
+    throw new Error('FS_SET_' + resp.status + ':' + detail.slice(0, 200));
+  }
+  return resp.json();
+}
+
+async function readJsonBody(request) {
+  try {
+    return await request.json();
+  } catch {
+    return {};
+  }
+}
+
 async function verifyBearerToken(request, env) {
   const header = request.headers.get('Authorization') || '';
   const token = header.startsWith('Bearer ') ? header.slice(7).trim() : '';
@@ -145,6 +190,51 @@ export async function handleSaasRequest(request, env, path) {
   }
 
   try {
+    if (path === '/api/saas/plan-interest' && request.method === 'POST') {
+      const body = await readJsonBody(request);
+      const planId = String(body.planId || '').trim().toLowerCase();
+      const allowedPlans = new Set(['free', 'starter', 'pro', 'business']);
+      if (!allowedPlans.has(planId)) {
+        return json({ error: 'invalid_plan' }, 400);
+      }
+      if (planId === 'free') {
+        return json({ error: 'free_plan_no_checkout' }, 400);
+      }
+
+      const now = new Date().toISOString();
+      const uid = user.uid;
+      const planName = String(body.planName || planId);
+      const priceEGP = Number(body.priceEGP) || 0;
+      const monthlyCredits = Number(body.monthlyCredits) || 0;
+      const intentId = `${uid}__${planId}__${Date.now()}`;
+
+      const interestPayload = {
+        userId: uid,
+        planId,
+        planName,
+        priceEGP,
+        monthlyCredits,
+        email: user.email || '',
+        requestedAt: now,
+        status: 'pending_payment',
+      };
+
+      await Promise.all([
+        setFirestoreDoc(env, `users/${uid}/planInterest/${planId}`, interestPayload, accessToken),
+        setFirestoreDoc(env, `billingIntents/${intentId}`, {
+          ...interestPayload,
+          intentId,
+          createdAt: now,
+        }, accessToken),
+      ]);
+
+      return json({ ok: true, planId, intentId, status: 'pending_payment' });
+    }
+
+    if (request.method !== 'GET') {
+      return json({ error: 'method_not_allowed' }, 405);
+    }
+
     if (path === '/api/saas/plans') {
       const plans = await listFirestoreCollection(env, 'plans', accessToken, 20);
       const sorted = plans

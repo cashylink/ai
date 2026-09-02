@@ -19,6 +19,7 @@ import {
   formatUsageTime,
   getEffectivePlans,
 } from './saas-store.js';
+import { getIdTokenForSaas, postSaasPlanInterest } from './saas-api.js';
 
 initAnalytics();
 
@@ -122,6 +123,17 @@ function openPlanModal(plan) {
 
 async function savePlanInterest(plan) {
   if (!currentUser || !plan) return;
+
+  const idToken = await getIdTokenForSaas(true);
+  if (idToken) {
+    try {
+      await postSaasPlanInterest(idToken, plan);
+      return;
+    } catch (err) {
+      console.warn('[LOQUIRA] Worker plan-interest failed, trying Firestore:', err?.status || err?.message || err);
+    }
+  }
+
   const ref = doc(db, 'users', currentUser.uid, 'planInterest', plan.id);
   await setDoc(ref, {
     planId: plan.id,
@@ -130,6 +142,7 @@ async function savePlanInterest(plan) {
     monthlyCredits: plan.monthlyCredits ?? 0,
     requestedAt: serverTimestamp(),
     email: currentUser.email || null,
+    status: 'pending_payment',
   }, { merge: true });
 }
 

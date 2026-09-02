@@ -15,9 +15,13 @@ service cloud.firestore {
       return isSignedIn() && request.auth.token.role == 'admin';
     }
 
-    // User subcollections (projects, settings, etc.)
+    // User subcollections (projects, settings, planInterest, etc.)
     match /users/{userId}/{document=**} {
       allow read, write: if isOwner(userId);
+    }
+
+    match /users/{uid}/planInterest/{planId} {
+      allow read, write: if isOwner(uid);
     }
 
     match /users/{uid} {

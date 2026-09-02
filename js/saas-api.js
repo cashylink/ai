@@ -12,13 +12,16 @@ export async function getIdTokenForSaas(forceRefresh = false) {
   return user.getIdToken(forceRefresh);
 }
 
-async function saasFetch(path, idToken) {
+async function saasFetch(path, idToken, options = {}) {
+  const method = options.method || 'GET';
   const resp = await fetch(`${LOQUIRA_SAAS_API_BASE}${path}`, {
-    method: 'GET',
+    method,
     headers: {
       Authorization: `Bearer ${idToken}`,
       Accept: 'application/json',
+      ...(options.body ? { 'Content-Type': 'application/json' } : {}),
     },
+    body: options.body ? JSON.stringify(options.body) : undefined,
   });
   if (!resp.ok) {
     const err = new Error(`SAAS_HTTP_${resp.status}`);
@@ -43,6 +46,18 @@ export async function fetchSaasUsage(idToken) {
 
 export async function fetchSaasPlans(idToken) {
   return saasFetch('/plans', idToken);
+}
+
+export async function postSaasPlanInterest(idToken, plan) {
+  return saasFetch('/plan-interest', idToken, {
+    method: 'POST',
+    body: {
+      planId: plan.id,
+      planName: plan.name,
+      priceEGP: plan.priceEGP ?? 0,
+      monthlyCredits: plan.monthlyCredits ?? 0,
+    },
+  });
 }
 
 /** Map Worker /me payload into dashboard account snapshot shape. */

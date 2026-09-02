@@ -10,6 +10,7 @@
  *   GET /me     — profile + plan + credits (Bearer idToken)
  *   GET /usage  — monthly usage summary
  *   GET /plans  — active plan catalog
+ *   POST /plan-interest — save plan selection (Bearer idToken)
  */
 
 import { handleSaasRequest } from './saas.js';
@@ -42,7 +43,7 @@ export default {
       if (path === '/api/auth/desktop/health' && request.method === 'GET') {
         return corsResponse(json({ ok: true, service: 'loquira-desktop-auth', version: 1 }), 200, request);
       }
-      if (path.startsWith('/api/saas/') && request.method === 'GET') {
+      if (path.startsWith('/api/saas/') && (request.method === 'GET' || request.method === 'POST')) {
         return corsResponse(await handleSaasRequest(request, env, path), 200, request);
       }
       return corsResponse(json({ error: 'not_found' }), 404, request);
