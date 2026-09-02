@@ -49,6 +49,14 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
           Models
         </button>
+        <button type="button" class="dash-nav-item" data-view="usage">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+          Usage
+        </button>
+        <button type="button" class="dash-nav-item" data-view="billing">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+          Billing
+        </button>
       </nav>
 
       <nav class="dash-nav dash-nav-footer" role="navigation" aria-label="Settings">
@@ -109,6 +117,8 @@
             <h1 id="overview-heading"><span id="greeting-text">Good evening</span>, <span id="greeting-name">there</span>.</h1>
             <p>Ready to build?</p>
           </div>
+
+          <div id="plan-summary-container" class="dash-plan-summary" aria-live="polite"></div>
 
           <div class="dash-stats" id="overview-stats">
             <div class="dash-stat-card" id="stat-card-projects" hidden>
@@ -195,6 +205,18 @@
         <section id="view-settings" class="dash-view" aria-labelledby="settings-heading">
           <h1 class="dash-page-title" id="settings-heading">Settings</h1>
           <div id="settings-container"></div>
+        </section>
+
+        <!-- Usage -->
+        <section id="view-usage" class="dash-view" aria-labelledby="usage-heading">
+          <h1 class="dash-page-title" id="usage-heading">Usage</h1>
+          <div id="usage-container"></div>
+        </section>
+
+        <!-- Billing -->
+        <section id="view-billing" class="dash-view" aria-labelledby="billing-heading">
+          <h1 class="dash-page-title" id="billing-heading">Billing</h1>
+          <div id="billing-container"></div>
         </section>
 
       </main>

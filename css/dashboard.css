@@ -1051,3 +1051,189 @@ body.dashboard-page {
     transform: none;
   }
 }
+
+/* Plan & billing */
+.dash-plan-summary {
+  margin-bottom: 1.75rem;
+}
+
+.dash-plan-card {
+  background: var(--dash-bg-surface);
+  border: 1px solid var(--dash-border);
+  border-radius: var(--dash-radius-lg);
+  padding: 1.25rem 1.5rem;
+}
+
+.dash-plan-card.compact {
+  max-width: 420px;
+}
+
+.dash-plan-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.dash-plan-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--dash-text-muted);
+  margin-bottom: 0.25rem;
+}
+
+.dash-plan-name {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--dash-text);
+}
+
+.dash-plan-price {
+  font-size: 0.875rem;
+  color: var(--dash-text-secondary);
+  margin-top: 0.25rem;
+}
+
+.dash-credits-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.dash-credits-remaining {
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--dash-accent);
+}
+
+.dash-credits-label {
+  font-size: 0.875rem;
+  color: var(--dash-text-secondary);
+}
+
+.dash-credits-sub {
+  font-size: 0.875rem;
+  color: var(--dash-text-muted);
+}
+
+.dash-progress {
+  height: 8px;
+  background: var(--dash-bg-hover);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: 1rem;
+}
+
+.dash-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--dash-accent), #38bdf8);
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.dash-plan-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.dash-plan-stat-value {
+  display: block;
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.dash-plan-stat-label {
+  font-size: 0.75rem;
+  color: var(--dash-text-muted);
+}
+
+.dash-plan-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.dash-muted {
+  color: var(--dash-text-secondary);
+  font-size: 0.875rem;
+}
+
+.dash-usage-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.dash-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.dash-table th,
+.dash-table td {
+  text-align: left;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--dash-border);
+}
+
+.dash-table th {
+  color: var(--dash-text-muted);
+  font-weight: 500;
+}
+
+.dash-activity-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.dash-activity-credits {
+  font-weight: 600;
+  color: var(--dash-text-secondary);
+  font-size: 0.875rem;
+}
+
+.dash-plans-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.dash-plan-option {
+  background: var(--dash-bg-surface);
+  border: 1px solid var(--dash-border);
+  border-radius: var(--dash-radius);
+  padding: 1rem;
+}
+
+.dash-plan-option.current {
+  border-color: var(--dash-accent);
+  box-shadow: 0 0 0 1px var(--dash-accent-soft);
+}
+
+.dash-plan-option-price {
+  font-size: 1.125rem;
+  font-weight: 700;
+  margin: 0.5rem 0;
+}
+
+.dash-billing-note {
+  margin-top: 1rem;
+}
+
+@media (max-width: 768px) {
+  .dash-usage-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dash-plan-card-header {
+    flex-direction: column;
+  }
+}

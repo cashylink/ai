@@ -5,7 +5,14 @@
  *   POST /complete — website submits verified Firebase idToken
  *   GET  /status   — desktop polls session status
  *   POST /consume  — desktop receives one-time custom token
+ *
+ * SaaS read API (base /api/saas):
+ *   GET /me     — profile + plan + credits (Bearer idToken)
+ *   GET /usage  — monthly usage summary
+ *   GET /plans  — active plan catalog
  */
+
+import { handleSaasRequest } from './saas.js';
 
 const LOOKUP_URL = 'https://identitytoolkit.googleapis.com/v1/accounts:lookup';
 const SESSION_PREFIX = 'desktop:';
@@ -34,6 +41,9 @@ export default {
       }
       if (path === '/api/auth/desktop/health' && request.method === 'GET') {
         return corsResponse(json({ ok: true, service: 'loquira-desktop-auth', version: 1 }), 200, request);
+      }
+      if (path.startsWith('/api/saas/') && request.method === 'GET') {
+        return corsResponse(await handleSaasRequest(request, env, path), 200, request);
       }
       return corsResponse(json({ error: 'not_found' }), 404, request);
     } catch (err) {
@@ -253,8 +263,6 @@ async function handleConsume(request, env) {
 
   session.consumed = true;
   session.consumedAt = Date.now();
-  await putSession(env, state, session);
-
   const out = {
     ok: true,
     uid: session.uid,
@@ -267,6 +275,10 @@ async function handleConsume(request, env) {
   } else if (session.idToken) {
     out.idToken = session.idToken;
   }
+  // Redact tokens from stored session after single-use handoff.
+  session.idToken = undefined;
+  session.customToken = undefined;
+  await putSession(env, state, session);
   return json(out);
 }
 

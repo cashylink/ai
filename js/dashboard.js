@@ -11,14 +11,23 @@ import {
 } from './dashboard-store.js';
 import { groupModels } from './loquira-models.js';
 
+import {
+  fetchAccountSnapshot,
+  formatCredits,
+  formatEgp,
+  formatUsageTime,
+} from './saas-store.js';
+
 initAnalytics();
 
-const VIEWS = ['overview', 'projects', 'agents', 'models', 'settings'];
+const VIEWS = ['overview', 'projects', 'agents', 'models', 'usage', 'billing', 'settings'];
 const VIEW_TITLES = {
   overview: 'Overview',
   projects: 'Projects',
   agents: 'Agent',
   models: 'Models',
+  usage: 'Usage',
+  billing: 'Billing',
   settings: 'Settings',
 };
 
@@ -30,6 +39,8 @@ let dashboardData = {
   projectsState: 'loading',
   agentsState: 'loading',
   modelsState: 'loading',
+  accountState: 'loading',
+  account: null,
 };
 
 const loadingEl = document.getElementById('dash-loading');
@@ -93,7 +104,6 @@ function showApp() {
 }
 
 function navigateTo(view) {
-  if (view === 'usage' || view === 'billing') view = 'overview';
   if (!VIEWS.includes(view)) view = 'overview';
 
   document.querySelectorAll('.dash-view').forEach(function (el) {
@@ -360,7 +370,193 @@ function renderModelsView() {
   container.innerHTML = html;
 }
 
+function renderPlanSummary() {
+  const container = document.getElementById('plan-summary-container');
+  if (!container) return;
+
+  if (dashboardData.accountState === 'loading') {
+    container.innerHTML = '<div class="dash-plan-card dash-skeleton" style="height:140px;border-radius:14px;"></div>';
+    return;
+  }
+
+  const snap = dashboardData.account?.summary;
+  if (!snap) {
+    container.innerHTML = '';
+    return;
+  }
+
+  const pct = Math.min(100, Math.max(0, snap.percentRemaining));
+  const priceLine = snap.priceEGP > 0 ? formatEgp(snap.priceEGP) + ' / month' : 'Free';
+
+  container.innerHTML =
+    '<div class="dash-plan-card">' +
+      '<div class="dash-plan-card-header">' +
+        '<div>' +
+          '<div class="dash-plan-label">Current Plan</div>' +
+          '<div class="dash-plan-name">LOQUIRA ' + escapeHtml(snap.planName) + '</div>' +
+          '<div class="dash-plan-price">' + escapeHtml(priceLine) + '</div>' +
+        '</div>' +
+        '<button type="button" class="dash-btn-secondary" data-view="billing">Upgrade Plan</button>' +
+      '</div>' +
+      '<div class="dash-credits-row">' +
+        '<div class="dash-credits-main">' +
+          '<span class="dash-credits-remaining">' + formatCredits(snap.remainingCredits) + '</span>' +
+          '<span class="dash-credits-label">Credits remaining</span>' +
+        '</div>' +
+        '<div class="dash-credits-sub">of ' + formatCredits(snap.monthlyCredits) + '</div>' +
+      '</div>' +
+      '<div class="dash-progress" role="progressbar" aria-valuenow="' + pct.toFixed(1) + '" aria-valuemin="0" aria-valuemax="100">' +
+        '<div class="dash-progress-fill" style="width:' + pct + '%"></div>' +
+      '</div>' +
+      '<div class="dash-plan-stats">' +
+        '<div><span class="dash-plan-stat-value">' + formatCredits(snap.usedCredits) + '</span><span class="dash-plan-stat-label">Used this month</span></div>' +
+        '<div><span class="dash-plan-stat-value">' + formatCredits(snap.requests) + '</span><span class="dash-plan-stat-label">AI requests</span></div>' +
+        (snap.estimatedCostUSD !== null
+          ? '<div><span class="dash-plan-stat-value">$' + snap.estimatedCostUSD.toFixed(2) + '</span><span class="dash-plan-stat-label">Est. AI cost</span></div>'
+          : '') +
+      '</div>' +
+      '<div class="dash-plan-actions">' +
+        '<button type="button" class="dash-btn-ghost" data-view="usage">View Usage</button>' +
+      '</div>' +
+    '</div>';
+}
+
+function renderUsageView() {
+  const container = document.getElementById('usage-container');
+  if (!container) return;
+
+  if (dashboardData.accountState === 'loading') {
+    container.innerHTML = renderSkeleton(3);
+    return;
+  }
+
+  const snap = dashboardData.account;
+  if (!snap?.summary) {
+    container.innerHTML = renderEmptyState('Usage unavailable', 'Open LOQUIRA Desktop and send an AI request to start tracking usage.', null, null);
+    return;
+  }
+
+  if (!snap.summary.hasCreditBalance) {
+    container.innerHTML =
+      '<div class="dash-state">' +
+        '<h3>Credits not activated yet</h3>' +
+        '<p>Sign in to LOQUIRA Desktop and send your first AI request. Your credits will appear here automatically.</p>' +
+      '</div>';
+    return;
+  }
+
+  const s = snap.summary;
+  const byModel = snap.usageMonthly?.byModel || {};
+  const modelRows = Object.keys(byModel).sort(function (a, b) {
+    return (byModel[b].credits || 0) - (byModel[a].credits || 0);
+  });
+
+  let html =
+    '<div class="dash-usage-grid">' +
+      '<div class="dash-stat-card"><div class="dash-stat-label">Credits used</div><div class="dash-stat-value">' + formatCredits(s.usedCredits) + '</div></div>' +
+      '<div class="dash-stat-card"><div class="dash-stat-label">Credits remaining</div><div class="dash-stat-value">' + formatCredits(s.remainingCredits) + '</div></div>' +
+      '<div class="dash-stat-card"><div class="dash-stat-label">Requests</div><div class="dash-stat-value">' + formatCredits(s.requests) + '</div></div>' +
+    '</div>';
+
+  html += '<div class="dash-section"><h2>Usage by Model</h2>';
+  if (modelRows.length === 0) {
+    html += '<p class="dash-muted">No model usage recorded this month yet.</p>';
+  } else {
+    html += '<table class="dash-table"><thead><tr><th>Model</th><th>Credits</th></tr></thead><tbody>';
+    modelRows.forEach(function (modelId) {
+      html += '<tr><td>' + escapeHtml(modelId) + '</td><td>' + formatCredits(byModel[modelId].credits) + '</td></tr>';
+    });
+    html += '</tbody></table>';
+  }
+  html += '</div>';
+
+  html += '<div class="dash-section"><h2>Recent activity</h2>';
+  if (!snap.recentUsage?.length) {
+    html += '<p class="dash-muted">No recent AI requests.</p>';
+  } else {
+    html += '<div class="dash-activity-list">';
+    snap.recentUsage.forEach(function (item) {
+      html +=
+        '<div class="dash-activity-item">' +
+          '<div><div class="dash-activity-title">' + escapeHtml(item.model) + '</div>' +
+          '<div class="dash-activity-meta">' + formatUsageTime(item.createdAt) + '</div></div>' +
+          '<div class="dash-activity-credits">' + formatCredits(item.credits) + ' Credits</div>' +
+          '<span class="dash-badge completed">' + escapeHtml(item.status) + '</span>' +
+        '</div>';
+    });
+    html += '</div>';
+  }
+  html += '</div>';
+
+  container.innerHTML = html;
+}
+
+function renderBillingView() {
+  const container = document.getElementById('billing-container');
+  if (!container) return;
+
+  if (dashboardData.accountState === 'loading') {
+    container.innerHTML = renderSkeleton(2);
+    return;
+  }
+
+  const snap = dashboardData.account;
+  const s = snap?.summary;
+  const allPlans = snap?.plans || [];
+
+  if (!s) {
+    container.innerHTML = renderEmptyState('Billing unavailable', 'Unable to load billing data.', null, null);
+    return;
+  }
+
+  const renewal = dashboardData.account?.subscription?.renewalDate;
+  const renewalText = renewal ? new Date(renewal).toLocaleDateString() : '—';
+
+  let html =
+    '<div class="dash-billing-current">' +
+      '<h2>Current plan</h2>' +
+      '<div class="dash-plan-card compact">' +
+        '<div class="dash-plan-name">LOQUIRA ' + escapeHtml(s.planName) + '</div>' +
+        '<div class="dash-plan-price">' + escapeHtml(s.priceEGP > 0 ? formatEgp(s.priceEGP) + ' / month' : 'Free') + '</div>' +
+        '<p class="dash-muted">Next renewal: ' + escapeHtml(renewalText) + '</p>' +
+        '<p class="dash-muted">' + formatCredits(s.remainingCredits) + ' of ' + formatCredits(s.monthlyCredits) + ' Credits remaining</p>' +
+      '</div>' +
+    '</div>';
+
+  html += '<div class="dash-section"><h2>Available plans</h2><div class="dash-plans-grid">';
+  (allPlans.length ? allPlans : []).forEach(function (plan) {
+    const isCurrent = plan.id === s.planId;
+    html +=
+      '<div class="dash-plan-option' + (isCurrent ? ' current' : '') + '">' +
+        '<h3>' + escapeHtml(plan.name) + '</h3>' +
+        '<div class="dash-plan-option-price">' + (plan.priceEGP > 0 ? formatEgp(plan.priceEGP) + '/mo' : 'Free') + '</div>' +
+        '<p class="dash-muted">' + formatCredits(plan.monthlyCredits) + ' Credits / month</p>' +
+        (isCurrent
+          ? '<span class="dash-badge completed">Current</span>'
+          : '<button type="button" class="dash-btn-secondary" disabled title="Payment gateway coming soon">Change plan</button>') +
+      '</div>';
+  });
+  html += '</div><p class="dash-muted dash-billing-note">Plan changes require payment provider integration — checkout is not enabled yet.</p></div>';
+
+  const products = snap.creditProducts || [];
+  if (products.length) {
+    html += '<div class="dash-section"><h2>Credit packs</h2><div class="dash-plans-grid">';
+    products.forEach(function (p) {
+      html +=
+        '<div class="dash-plan-option">' +
+          '<h3>' + escapeHtml(p.name) + '</h3>' +
+          '<div class="dash-plan-option-price">' + formatEgp(p.priceEGP) + '</div>' +
+          '<button type="button" class="dash-btn-secondary" disabled title="Coming soon">Buy credits</button>' +
+        '</div>';
+    });
+    html += '</div></div>';
+  }
+
+  container.innerHTML = html;
+}
+
 function renderOverview() {
+  renderPlanSummary();
   renderProjectsList(document.getElementById('recent-projects-container'), dashboardData.projects, { limit: 4, showOpen: true });
   renderAgentsList(document.getElementById('recent-agents-container'), dashboardData.agents, { limit: 4 });
   updateStats();
@@ -407,7 +603,34 @@ function renderAll() {
   renderProjectsView();
   renderAgentsView();
   renderModelsView();
+  renderUsageView();
+  renderBillingView();
   renderSettingsView();
+}
+
+async function loadAccountData() {
+  if (!currentUser) return;
+  dashboardData.accountState = 'loading';
+  renderPlanSummary();
+  renderUsageView();
+  renderBillingView();
+
+  try {
+    dashboardData.account = await fetchAccountSnapshot(currentUser.uid);
+    dashboardData.accountState = 'loaded';
+  } catch (err) {
+    console.error('[LOQUIRA] Account load error:', err);
+    dashboardData.account = null;
+    dashboardData.accountState = 'error';
+  }
+
+  renderPlanSummary();
+  renderUsageView();
+  renderBillingView();
+}
+
+async function loadDashboardData() {
+  await Promise.all([loadProjects(), loadAgents(), loadModels(), loadAccountData()]);
 }
 
 async function loadProjects() {
@@ -463,10 +686,6 @@ async function loadModels() {
   }
 
   renderModelsView();
-}
-
-async function loadDashboardData() {
-  await Promise.all([loadProjects(), loadAgents(), loadModels()]);
 }
 
 async function handleCreateProject(e) {

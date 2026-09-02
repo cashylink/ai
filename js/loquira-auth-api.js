@@ -22,6 +22,9 @@ export const LOQUIRA_AUTH_ENDPOINTS = Object.freeze({
 
 export const LOQUIRA_WEB_LOGIN_URL = 'https://www.lokiara.com/login.html';
 
+/** Read-only billing API (Worker → Firestore). */
+export const LOQUIRA_SAAS_API_BASE = 'https://api.lokiara.com/api/saas';
+
 export function buildDesktopLoginUrl(state) {
   return `${LOQUIRA_WEB_LOGIN_URL}?client=desktop&state=${encodeURIComponent(state)}`;
 }

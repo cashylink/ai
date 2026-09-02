@@ -24,6 +24,18 @@ https://loquira-auth.alkaptin2030.workers.dev/auth/desktop
 | POST | `/consume` | Desktop receives one-time custom token |
 | GET | `/health` | Health check |
 
+## SaaS API (website billing — read-only)
+
+Base: `https://api.lokiara.com/api/saas` (same Worker; requires `Authorization: Bearer <Firebase idToken>`)
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| GET | `/me` | Profile, plan, credit balance, allowance |
+| GET | `/usage` | Monthly usage summary |
+| GET | `/plans` | Active plan catalog |
+
+Uses the same Firebase service account secrets as desktop auth (`FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY`).
+
 ## Deploy
 
 ```bash
