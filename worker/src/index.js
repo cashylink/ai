@@ -154,19 +154,35 @@ async function handleComplete(request, env) {
     return json({ error: 'state_and_idToken_required' }, 400);
   }
 
-  const session = await getSession(env, state);
-  if (!session) {
-    return json({ error: 'invalid_state' }, 410);
-  }
-  if (isExpired(session)) {
-    return json({ error: 'expired' }, 410);
-  }
-  if (session.consumed) {
-    return json({ error: 'already_consumed' }, 409);
-  }
-  if (session.status === 'completed') {
-    return json({ ok: true, status: 'completed' });
-  }
+		const session = await getSession(env, state);
+		if (!session) {
+			const now = Date.now();
+			const ttl = sessionTtlSec(env) * 1000;
+			const created = {
+				state,
+				client: 'desktop',
+				status: 'pending',
+				consumed: false,
+				createdAt: now,
+				expiresAt: now + ttl,
+			};
+			await putSession(env, state, created);
+		} else {
+			if (isExpired(session)) {
+				return json({ error: 'expired' }, 410);
+			}
+			if (session.consumed) {
+				return json({ error: 'already_consumed' }, 409);
+			}
+			if (session.status === 'completed') {
+				return json({ ok: true, status: 'completed' });
+			}
+		}
+
+		const activeSession = await getSession(env, state);
+		if (!activeSession) {
+			return json({ error: 'invalid_state' }, 410);
+		}
 
   const verified = await verifyFirebaseIdToken(idToken, env);
   if (!verified?.uid) {
@@ -182,15 +198,15 @@ async function handleComplete(request, env) {
     }
   }
 
-  session.status = 'completed';
-  session.uid = verified.uid;
-  session.email = verified.email || '';
-  session.displayName = verified.displayName || '';
-  session.photoURL = verified.photoURL || '';
-  session.idToken = idToken;
-  session.customToken = customToken || undefined;
-  session.completedAt = Date.now();
-  await putSession(env, state, session);
+  activeSession.status = 'completed';
+  activeSession.uid = verified.uid;
+  activeSession.email = verified.email || '';
+  activeSession.displayName = verified.displayName || '';
+  activeSession.photoURL = verified.photoURL || '';
+  activeSession.idToken = idToken;
+  activeSession.customToken = customToken || undefined;
+  activeSession.completedAt = Date.now();
+  await putSession(env, state, activeSession);
 
   return json({ ok: true, status: 'completed' });
 }
