@@ -3,48 +3,59 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
   <title>تم تسجيل الدخول — LOQUIRA</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="css/auth.css" />
-  <style>
-    .desktop-success-card {
-      max-width: 420px;
-      margin: 10vh auto;
-      padding: 2rem;
-      text-align: center;
-      background: var(--card-bg, #1a1d24);
-      border-radius: 16px;
-      border: 1px solid rgba(255,255,255,0.08);
-    }
-    .desktop-success-card h1 { font-size: 1.5rem; margin-bottom: 0.75rem; color: #2ecc71; }
-    .desktop-success-card p { color: #b0b8c4; line-height: 1.6; margin-bottom: 1.5rem; }
-    .desktop-success-btn {
-      display: inline-block;
-      padding: 0.75rem 1.5rem;
-      background: linear-gradient(135deg, #6366f1, #8b5cf6);
-      color: #fff;
-      text-decoration: none;
-      border-radius: 10px;
-      font-weight: 600;
-      border: none;
-      cursor: pointer;
-      font-size: 1rem;
-    }
-  </style>
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/loquira.css" />
+  <link rel="stylesheet" href="css/desktop-auth-success.css" />
 </head>
-<body class="auth-page">
-  <div class="desktop-success-card">
-    <h1>✅ تم تسجيل الدخول بنجاح</h1>
-    <p>يمكنك الآن العودة إلى تطبيق LOQUIRA — سيفتح تلقائياً بحسابك.</p>
-    <button type="button" class="desktop-success-btn" id="open-app-btn">فتح تطبيق LOQUIRA</button>
-    <p style="margin-top:1rem;font-size:0.85rem;">إذا لم يفتح التطبيق، اضغط الزر أعلاه أو ارجع إلى نافذة LOQUIRA.</p>
-  </div>
-  <script type="module">
-    import { openDesktopApp } from './js/desktop-auth.js';
-    const params = new URLSearchParams(window.location.search);
-    const state = params.get('state') || '';
-    document.getElementById('open-app-btn').addEventListener('click', () => openDesktopApp(state));
-    setTimeout(() => openDesktopApp(state), 800);
-  </script>
+<body class="desktop-handoff">
+  <div class="handoff-ambient" aria-hidden="true"></div>
+
+  <main class="handoff-main" role="main" aria-live="polite" aria-busy="true">
+    <header class="handoff-brand" aria-label="LOQUIRA">
+      <span class="logo-mark" aria-hidden="true">L</span>
+      <span>LOQUIRA</span>
+    </header>
+
+    <section class="handoff-stage" id="handoff-stage" aria-labelledby="handoff-title">
+      <div class="handoff-check-wrap">
+        <div class="handoff-spinner" id="handoff-spinner" role="status" aria-label="جاري التحميل"></div>
+        <div class="handoff-check-ring" id="handoff-check-ring" aria-hidden="true">
+          <div class="handoff-check-icon" id="handoff-check-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M20 6L9 17l-5-5" />
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <h1 class="handoff-title" id="handoff-title">جاري تسجيل الدخول…</h1>
+      <p class="handoff-subtitle" id="handoff-subtitle"></p>
+
+      <div class="handoff-status" id="handoff-status">
+        <span id="handoff-status-text"></span>
+        <span class="handoff-dots" id="handoff-dots" hidden aria-hidden="true">
+          <span></span><span></span><span></span>
+        </span>
+      </div>
+    </section>
+
+    <div class="handoff-fallback" id="handoff-fallback" hidden>
+      <p class="handoff-fallback-msg" id="handoff-fallback-msg"></p>
+      <button type="button" class="btn-handoff-primary" id="open-app-btn">
+        فتح LOQUIRA
+      </button>
+      <a href="index.html" class="btn-handoff-secondary" id="return-website">
+        العودة إلى الموقع
+      </a>
+    </div>
+  </main>
+
+  <script type="module" src="js/desktop-auth-success.js"></script>
 </body>
 </html>

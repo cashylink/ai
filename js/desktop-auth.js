@@ -6,7 +6,7 @@
 
 import { getAuthApiBase } from './loquira-auth-api.js';
 
-const DESKTOP_DEEP_LINK = 'forge-ai://forge-ai.forge-ai/auth-callback';
+const DESKTOP_DEEP_LINK = 'forge-ai://forge-ai.forge-ai/auth/complete';
 const HANDOFF_TIMEOUT_MS = 12000;
 
 let handoffCompleted = false;
