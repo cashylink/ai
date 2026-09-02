@@ -1,6 +1,5 @@
 import { watchAuth, logOut } from './auth.js';
-import { initAnalytics, db } from './firebase-config.js';
-import { doc, setDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js';
+import { initAnalytics } from './firebase-config.js';
 import {
   fetchProjects,
   createProject,
@@ -109,11 +108,10 @@ function openPlanModal(plan) {
     planModalText.innerHTML =
       '<strong>' + escapeHtml(priceLine) + '</strong> — ' +
       formatCredits(plan.monthlyCredits) + ' Credits per month.<br><br>' +
-      'Online checkout is being finalized. Confirm your choice and we will save your plan preference. ' +
-      'You will be notified when payment is available — no charge until then.';
+      'Confirm to activate this plan immediately. Your credits will update right away.';
   }
   if (planModalConfirm) {
-    planModalConfirm.textContent = 'Confirm selection';
+    planModalConfirm.textContent = 'Activate plan';
     planModalConfirm.disabled = false;
   }
   planModal.hidden = false;
@@ -122,28 +120,13 @@ function openPlanModal(plan) {
 }
 
 async function savePlanInterest(plan) {
-  if (!currentUser || !plan) return;
+  if (!currentUser || !plan) return null;
 
   const idToken = await getIdTokenForSaas(true);
-  if (idToken) {
-    try {
-      await postSaasPlanInterest(idToken, plan);
-      return;
-    } catch (err) {
-      console.warn('[LOQUIRA] Worker plan-interest failed, trying Firestore:', err?.status || err?.message || err);
-    }
+  if (!idToken) {
+    throw new Error('NOT_AUTHENTICATED');
   }
-
-  const ref = doc(db, 'users', currentUser.uid, 'planInterest', plan.id);
-  await setDoc(ref, {
-    planId: plan.id,
-    planName: plan.name,
-    priceEGP: plan.priceEGP ?? 0,
-    monthlyCredits: plan.monthlyCredits ?? 0,
-    requestedAt: serverTimestamp(),
-    email: currentUser.email || null,
-    status: 'pending_payment',
-  }, { merge: true });
+  return postSaasPlanInterest(idToken, plan);
 }
 
 async function handlePlanModalConfirm() {
@@ -151,21 +134,23 @@ async function handlePlanModalConfirm() {
   if (!plan || !planModalConfirm) return;
 
   planModalConfirm.disabled = true;
-  planModalConfirm.textContent = 'Saving…';
+  planModalConfirm.textContent = 'Activating…';
 
   try {
-    await savePlanInterest(plan);
+    const result = await savePlanInterest(plan);
     selectedBillingPlanId = plan.id;
+    await loadAccountData();
     if (planModalText) {
       planModalText.innerHTML =
-        '<span class="dash-badge completed">Plan preference saved</span><br><br>' +
-        'You selected <strong>LOQUIRA ' + escapeHtml(plan.name) + '</strong>. ' +
-        'We will notify you when checkout is ready.';
+        '<span class="dash-badge completed">Plan activated</span><br><br>' +
+        'LOQUIRA <strong>' + escapeHtml(plan.name) + '</strong> is now active with ' +
+        '<strong>' + formatCredits(result?.allowance?.remainingCredits ?? plan.monthlyCredits) + '</strong> Credits.';
     }
-    if (planModalTitle) planModalTitle.textContent = 'Selection saved';
+    if (planModalTitle) planModalTitle.textContent = 'Plan activated';
     planModalConfirm.textContent = 'Done';
     planModalConfirm.disabled = false;
     renderBillingView();
+    renderPlanSummary();
   } catch (err) {
     console.error('[LOQUIRA] Plan interest save failed:', err);
     if (planModalText) {
@@ -210,15 +195,7 @@ function bindBillingViewEvents() {
     }
 
     if (plan.priceEGP <= 0) {
-      if (planModalTitle) planModalTitle.textContent = 'LOQUIRA Free';
-      if (planModalText) {
-        planModalText.textContent =
-          'LOQUIRA Free is your default plan. Paid checkout is required to upgrade to Starter, Pro, or Business.';
-      }
-      if (planModalConfirm) planModalConfirm.textContent = 'OK';
-      pendingPlanSelection = null;
-      planModal.hidden = false;
-      planModal.classList.add('open');
+      openPlanModal(plan);
       return;
     }
 
@@ -727,7 +704,7 @@ function renderBillingView() {
       '</div>' +
     '</div>';
 
-  html += '<div class="dash-section"><h2>Choose a plan</h2><p class="dash-muted">Select a plan below, then continue. Online payment will be enabled soon.</p>';
+  html += '<div class="dash-section"><h2>Choose a plan</h2><p class="dash-muted">Select a plan and activate it instantly. Credits update immediately.</p>';
   html += '<div class="dash-plans-grid">';
   allPlans.forEach(function (plan) {
     const isCurrent = plan.id === s.planId;

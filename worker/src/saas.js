@@ -178,6 +178,121 @@ function monthKey(ts = Date.now()) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 }
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+const DEFAULT_PLANS = {
+  free: { id: 'free', name: 'Free', monthlyCredits: 500, priceEGP: 0 },
+  starter: { id: 'starter', name: 'Starter', monthlyCredits: 3000, priceEGP: 149 },
+  pro: { id: 'pro', name: 'Pro', monthlyCredits: 10000, priceEGP: 349 },
+  business: { id: 'business', name: 'Business', monthlyCredits: 30000, priceEGP: 799 },
+};
+
+async function resolvePlan(env, planId, accessToken, body) {
+  const plansRaw = await listFirestoreCollection(env, 'plans', accessToken, 20);
+  const fromDb = plansRaw.map((p) => p.data).find((p) => p && p.id === planId);
+  if (fromDb) return fromDb;
+  const seed = DEFAULT_PLANS[planId];
+  if (!seed) return null;
+  return {
+    ...seed,
+    planName: body.planName || seed.name,
+    monthlyCredits: Number(body.monthlyCredits) || seed.monthlyCredits,
+    priceEGP: Number(body.priceEGP) || seed.priceEGP,
+  };
+}
+
+/** Activate subscription + credit balance server-side (no payment gateway). */
+async function activateUserPlan(env, uid, planId, accessToken, body = {}) {
+  const plan = await resolvePlan(env, planId, accessToken, body);
+  if (!plan) throw new Error('PLAN_NOT_FOUND');
+
+  const now = Date.now();
+  const periodEnd = now + 30 * DAY_MS;
+  const monthlyCredits = Number(plan.monthlyCredits) || DEFAULT_PLANS[planId]?.monthlyCredits || 0;
+  const planName = plan.name || body.planName || planId;
+
+  let subscription = await getFirestoreDoc(env, 'subscriptions', uid, accessToken);
+  const alreadyOnPlan = subscription?.planId === planId;
+
+  if (!subscription) {
+    subscription = {
+      id: uid,
+      userId: uid,
+      planId,
+      status: 'active',
+      periodStart: now,
+      renewalDate: periodEnd,
+      autoRenew: true,
+      paymentProvider: 'none',
+      createdAt: now,
+      updatedAt: now,
+    };
+  } else if (!alreadyOnPlan) {
+    subscription = {
+      ...subscription,
+      planId,
+      status: 'active',
+      periodStart: now,
+      renewalDate: periodEnd,
+      autoRenew: true,
+      paymentProvider: 'none',
+      updatedAt: now,
+    };
+  }
+
+  const creditBalance = {
+    uid,
+    planId,
+    monthlyCredits,
+    usedCredits: 0,
+    reservedCredits: 0,
+    remainingCredits: monthlyCredits,
+    periodStart: now,
+    periodEnd,
+    updatedAt: now,
+  };
+
+  const writes = [
+    setFirestoreDoc(env, `users/${uid}/planInterest/${planId}`, {
+      userId: uid,
+      planId,
+      planName,
+      priceEGP: plan.priceEGP ?? DEFAULT_PLANS[planId]?.priceEGP ?? 0,
+      monthlyCredits,
+      email: body.email || '',
+      activatedAt: new Date(now).toISOString(),
+      status: 'active',
+    }, accessToken),
+  ];
+
+  if (!alreadyOnPlan) {
+    writes.push(
+      setFirestoreDoc(env, `subscriptions/${uid}`, subscription, accessToken),
+      setFirestoreDoc(env, `creditBalances/${uid}`, creditBalance, accessToken),
+    );
+  }
+
+  await Promise.all(writes);
+
+  return {
+    ok: true,
+    changed: !alreadyOnPlan,
+    planId,
+    planName,
+    status: 'active',
+    subscription,
+    creditBalance,
+    allowance: {
+      planId,
+      planName,
+      monthlyCredits,
+      usedCredits: 0,
+      remainingCredits: monthlyCredits,
+      requests: 0,
+    },
+  };
+}
+
 export async function handleSaasRequest(request, env, path) {
   const user = await verifyBearerToken(request, env);
   if (!user?.uid) {
@@ -197,38 +312,12 @@ export async function handleSaasRequest(request, env, path) {
       if (!allowedPlans.has(planId)) {
         return json({ error: 'invalid_plan' }, 400);
       }
-      if (planId === 'free') {
-        return json({ error: 'free_plan_no_checkout' }, 400);
-      }
 
-      const now = new Date().toISOString();
-      const uid = user.uid;
-      const planName = String(body.planName || planId);
-      const priceEGP = Number(body.priceEGP) || 0;
-      const monthlyCredits = Number(body.monthlyCredits) || 0;
-      const intentId = `${uid}__${planId}__${Date.now()}`;
-
-      const interestPayload = {
-        userId: uid,
-        planId,
-        planName,
-        priceEGP,
-        monthlyCredits,
+      const result = await activateUserPlan(env, user.uid, planId, accessToken, {
+        ...body,
         email: user.email || '',
-        requestedAt: now,
-        status: 'pending_payment',
-      };
-
-      await Promise.all([
-        setFirestoreDoc(env, `users/${uid}/planInterest/${planId}`, interestPayload, accessToken),
-        setFirestoreDoc(env, `billingIntents/${intentId}`, {
-          ...interestPayload,
-          intentId,
-          createdAt: now,
-        }, accessToken),
-      ]);
-
-      return json({ ok: true, planId, intentId, status: 'pending_payment' });
+      });
+      return json(result);
     }
 
     if (request.method !== 'GET') {

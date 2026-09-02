@@ -10,7 +10,7 @@
  *   GET /me     — profile + plan + credits (Bearer idToken)
  *   GET /usage  — monthly usage summary
  *   GET /plans  — active plan catalog
- *   POST /plan-interest — save plan selection (Bearer idToken)
+ *   POST /plan-interest — activate plan + credits (Bearer idToken)
  */
 
 import { handleSaasRequest } from './saas.js';
