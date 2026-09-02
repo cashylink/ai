@@ -187,6 +187,7 @@ async function handleComplete(request, env) {
   session.email = verified.email || '';
   session.displayName = verified.displayName || '';
   session.photoURL = verified.photoURL || '';
+  session.idToken = idToken;
   session.customToken = customToken || undefined;
   session.completedAt = Date.now();
   await putSession(env, state, session);
@@ -247,6 +248,8 @@ async function handleConsume(request, env) {
   };
   if (session.customToken) {
     out.customToken = session.customToken;
+  } else if (session.idToken) {
+    out.idToken = session.idToken;
   }
   return json(out);
 }
