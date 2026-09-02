@@ -12,7 +12,6 @@ import { ensureWebAuthUrl } from './auth-source.js';
 
 initAnalytics();
 
-// Capture desktop handoff params BEFORE any URL cleanup (production bug fix).
 const desktopFlow = isDesktopAuthFlow();
 if (!desktopFlow) {
   ensureWebAuthUrl();
@@ -28,36 +27,6 @@ if (desktopFlow) {
   document.title = 'تسجيل الدخول — LOQUIRA Desktop';
 }
 
-watchAuth(async function (user) {
-  if (!user) return;
-  if (desktopFlow) {
-    try {
-      await completeDesktopHandoff(user);
-    } catch (err) {
-      showAlert('تم تسجيل الدخول، لكن تعذر إكمال تسجيل الدخول إلى تطبيق LOQUIRA.', 'error');
-    }
-    return;
-  }
-  window.location.href = 'workspace.html';
-});
-
-handleGoogleRedirectResult()
-  .then(async function (user) {
-    if (!user) return;
-    if (desktopFlow) {
-      try {
-        await completeDesktopHandoff(user);
-      } catch (err) {
-        showAlert('تم تسجيل الدخول، لكن تعذر إكمال تسجيل الدخول إلى تطبيق LOQUIRA.', 'error');
-      }
-      return;
-    }
-    window.location.href = 'workspace.html';
-  })
-  .catch(function (err) {
-    showAlert(getAuthErrorMessage(err.code), 'error');
-  });
-
 function showAlert(message, type) {
   alertEl.textContent = message;
   alertEl.className = 'auth-alert visible ' + type;
@@ -70,23 +39,67 @@ function hideAlert() {
 function setLoading(loading, googleOnly) {
   submitBtn.disabled = loading;
   googleBtn.disabled = loading;
+  googleBtn.setAttribute('aria-busy', loading ? 'true' : 'false');
   if (!googleOnly) {
     submitBtn.textContent = loading ? 'Signing in…' : 'Sign in';
   }
 }
 
+function desktopHandoffErrorMessage(err) {
+  const code = String(err?.message || err || '');
+  if (code === 'LOQUIRA_NOT_REACHABLE' || code === 'HANDOFF_FAILED') {
+    return 'تم تسجيل الدخول، لكن تعذر الاتصال بتطبيق LOQUIRA. تأكد أن التطبيق مفتوح ثم أعد المحاولة.';
+  }
+  if (code === 'SESSION_EXPIRED' || code === 'invalid_state') {
+    return 'انتهت جلسة تسجيل الدخول. ارجع إلى LOQUIRA واضغط Continue with Google مرة أخرى.';
+  }
+  return 'تم تسجيل الدخول، لكن تعذر إكمال تسجيل الدخول إلى تطبيق LOQUIRA.';
+}
+
+async function handleDesktopSignIn(user) {
+  if (!user) return;
+  setLoading(true, true);
+  try {
+    await completeDesktopHandoff(user);
+  } catch (err) {
+    showAlert(desktopHandoffErrorMessage(err), 'error');
+  } finally {
+    setLoading(false, true);
+  }
+}
+
+async function handleWebSignIn(user) {
+  if (!user) return;
+  window.location.href = 'workspace.html';
+}
+
 async function afterSignIn(user) {
   if (!user) return;
   if (desktopFlow) {
-    try {
-      await completeDesktopHandoff(user);
-    } catch (err) {
-      showAlert('تم تسجيل الدخول، لكن تعذر إكمال تسجيل الدخول إلى تطبيق LOQUIRA.', 'error');
-    }
+    await handleDesktopSignIn(user);
+    return;
+  }
+  await handleWebSignIn(user);
+}
+
+watchAuth(async function (user) {
+  if (!user) return;
+  if (desktopFlow) {
+    await handleDesktopSignIn(user);
     return;
   }
   window.location.href = 'workspace.html';
-}
+});
+
+handleGoogleRedirectResult()
+  .then(async function (user) {
+    if (!user) return;
+    await afterSignIn(user);
+  })
+  .catch(function (err) {
+    showAlert(getAuthErrorMessage(err.code), 'error');
+    setLoading(false, true);
+  });
 
 form.addEventListener('submit', async function (e) {
   e.preventDefault();
@@ -112,6 +125,7 @@ form.addEventListener('submit', async function (e) {
 });
 
 googleBtn.addEventListener('click', async function () {
+  if (googleBtn.disabled) return;
   hideAlert();
   setLoading(true, true);
   try {
