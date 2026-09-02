@@ -1,0 +1,112 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.role == 'admin';
+    }
+
+    function isValidPlanId(planId) {
+      return planId == 'free' || planId == 'starter' || planId == 'pro' || planId == 'business';
+    }
+
+    function isValidCreditBalanceWrite(uid) {
+      let planId = request.resource.data.planId;
+      return request.resource.data.uid == uid
+        && isValidPlanId(planId);
+    }
+
+    function isValidSubscriptionWrite(uid) {
+      return request.resource.data.userId == uid
+        && isValidPlanId(request.resource.data.planId)
+        && request.resource.data.status == 'active';
+    }
+
+    // User subcollections (projects, settings, planInterest, etc.)
+    match /users/{userId}/{document=**} {
+      allow read, write: if isOwner(userId);
+    }
+
+    match /users/{uid}/planInterest/{planId} {
+      allow read, write: if isOwner(uid);
+    }
+
+    match /users/{uid} {
+      allow read: if isOwner(uid) || isAdmin();
+      allow create: if isOwner(uid) && request.resource.data.uid == uid;
+      allow update: if isOwner(uid) && request.resource.data.uid == uid
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'credits']);
+      allow delete: if false;
+    }
+
+    match /plans/{planId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    match /creditProducts/{productId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    match /subscriptions/{uid} {
+      allow read: if isOwner(uid) || isAdmin();
+      allow create, update: if isOwner(uid) && isValidSubscriptionWrite(uid);
+      allow delete: if false;
+    }
+
+    match /creditBalances/{uid} {
+      allow read: if isOwner(uid) || isAdmin();
+      allow create, update: if isOwner(uid) && isValidCreditBalanceWrite(uid);
+      allow delete: if false;
+    }
+
+    match /usageLedger/{entryId} {
+      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow write: if false;
+    }
+
+    match /usage/{usageId} {
+      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow write: if false;
+    }
+
+    match /usageDaily/{docId} {
+      allow read: if isSignedIn() && (docId.matches('^' + request.auth.uid + '__.*') || isAdmin());
+      allow write: if false;
+    }
+
+    match /usageMonthly/{docId} {
+      allow read: if isSignedIn() && (docId.matches('^' + request.auth.uid + '__.*') || isAdmin());
+      allow write: if false;
+    }
+
+    match /creditReservations/{requestId} {
+      allow read, write: if false;
+    }
+
+    match /billingIntents/{intentId} {
+      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow write: if false;
+    }
+
+    match /projects/{projectId} {
+      allow read: if isSignedIn() && (resource.data.ownerId == request.auth.uid || isAdmin());
+      allow create: if isSignedIn() && request.resource.data.ownerId == request.auth.uid;
+      allow update, delete: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
