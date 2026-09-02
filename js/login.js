@@ -48,13 +48,29 @@ function setLoading(loading, googleOnly) {
 
 function desktopHandoffErrorMessage(err) {
   const code = String(err?.message || err || '');
-  if (code === 'LOQUIRA_NOT_REACHABLE' || code === 'HANDOFF_FAILED') {
-    return 'تم تسجيل الدخول، لكن تعذر الاتصال بتطبيق LOQUIRA. تأكد أن التطبيق مفتوح ثم أعد المحاولة.';
+  if (code === 'WORKER_NOT_REACHABLE' || code === 'HANDOFF_FAILED') {
+    return 'تم تسجيل الدخول، لكن تعذر إكمال تسجيل الدخول إلى تطبيق LOQUIRA.';
   }
   if (code === 'SESSION_EXPIRED' || code === 'invalid_state') {
     return 'انتهت جلسة تسجيل الدخول. ارجع إلى LOQUIRA واضغط Continue with Google مرة أخرى.';
   }
   return 'تم تسجيل الدخول، لكن تعذر إكمال تسجيل الدخول إلى تطبيق LOQUIRA.';
+}
+
+function showDesktopRetry() {
+  if (document.getElementById('desktop-retry-btn')) return;
+  const btn = document.createElement('button');
+  btn.id = 'desktop-retry-btn';
+  btn.type = 'button';
+  btn.className = 'btn btn-primary btn-lg btn-full';
+  btn.style.marginTop = '12px';
+  btn.textContent = 'إعادة المحاولة';
+  btn.addEventListener('click', async () => {
+    hideAlert();
+    btn.remove();
+    googleBtn.click();
+  });
+  alertEl.parentElement?.appendChild(btn);
 }
 
 async function handleDesktopSignIn(user) {
@@ -64,6 +80,7 @@ async function handleDesktopSignIn(user) {
     await completeDesktopHandoff(user);
   } catch (err) {
     showAlert(desktopHandoffErrorMessage(err), 'error');
+    showDesktopRetry();
     try { await logOut(); } catch (_) { /* allow retry */ }
   } finally {
     setLoading(false, true);
