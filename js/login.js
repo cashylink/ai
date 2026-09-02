@@ -40,6 +40,8 @@ watchAuth(async function (user) {
   }
   window.location.href = 'workspace.html';
 });
+
+handleGoogleRedirectResult()
   .then(async function (user) {
     if (!user) return;
     if (desktopFlow) {
