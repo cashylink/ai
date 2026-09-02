@@ -75,7 +75,7 @@ function isAllowedOrigin(origin) {
   if (!origin) return true;
   try {
     const u = new URL(origin);
-    return u.hostname === 'www.lokiara.com' || u.hostname === 'lokiara.com' || u.hostname === 'localhost';
+    return u.hostname === 'www.lokiara.com' || u.hostname === 'lokiara.com' || u.hostname === 'api.lokiara.com' || u.hostname === 'localhost';
   } catch {
     return false;
   }

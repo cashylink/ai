@@ -2,9 +2,19 @@
 
 Cloudflare Worker that securely bridges **www.lokiara.com** Firebase login to **LOQUIRA Desktop**.
 
-## Endpoints
+## Production API (fixed URL)
 
-Base: `https://www.lokiara.com/api/auth/desktop`
+```
+https://api.lokiara.com/auth/desktop
+```
+
+Fallback (active until custom domain route is attached):
+
+```
+https://loquira-auth.alkaptin2030.workers.dev/auth/desktop
+```
+
+## Endpoints
 
 | Method | Path | Purpose |
 |--------|------|---------|
@@ -14,40 +24,56 @@ Base: `https://www.lokiara.com/api/auth/desktop`
 | POST | `/consume` | Desktop receives one-time custom token |
 | GET | `/health` | Health check |
 
-## Setup
+## Deploy
 
-1. Create KV namespace:
-   ```bash
-   cd worker
-   npm install
-   npx wrangler kv namespace create DESKTOP_AUTH
-   npx wrangler kv namespace create DESKTOP_AUTH --preview
+```bash
+cd worker
+npm install
+npm run deploy
+```
+
+Health check:
+
+```bash
+curl https://loquira-auth.alkaptin2030.workers.dev/auth/desktop/health
+```
+
+## Attach `api.lokiara.com` (required for fixed domain)
+
+`lokiara.com` is currently on **Vercel DNS** (`ns1.vercel-dns.com`). Cloudflare cannot attach a Worker route until the zone is on the same Cloudflare account (`alkaptin2030@gmail.com`).
+
+1. In [Cloudflare Dashboard](https://dash.cloudflare.com) → **Add a site** → `lokiara.com`
+2. Copy the two Cloudflare nameservers Cloudflare gives you
+3. At your domain registrar, replace Vercel nameservers with Cloudflare nameservers
+4. In Cloudflare DNS, recreate records:
+   - `www` → CNAME → your GitHub Pages host (keep website working)
+   - `api` → will be handled by the Worker route (remove old A records to GitHub)
+5. Uncomment in `wrangler.toml`:
+   ```toml
+   routes = [{ pattern = "api.lokiara.com/*", zone_name = "lokiara.com" }]
    ```
-2. Paste KV ids into `wrangler.toml`.
-3. Set Firebase service account secrets (for custom tokens):
-   ```bash
-   npx wrangler secret put FIREBASE_CLIENT_EMAIL
-   npx wrangler secret put FIREBASE_PRIVATE_KEY
-   ```
-4. Deploy:
+6. Redeploy:
    ```bash
    npm run deploy
    ```
-5. In Cloudflare dashboard, add a route:
-   - `www.lokiara.com/api/auth/desktop/*` → `loquira-auth` worker
+7. Verify:
+   ```bash
+   curl https://api.lokiara.com/auth/desktop/health
+   ```
+
+## Firebase secrets (required for desktop auto-login)
+
+```bash
+npx wrangler secret put FIREBASE_CLIENT_EMAIL
+npx wrangler secret put FIREBASE_PRIVATE_KEY
+```
+
+Use the Firebase service account for project `aiprogekt-155e1`.
 
 ## Security
 
 - Firebase ID tokens verified via Identity Toolkit `accounts:lookup`
 - Custom tokens created server-side only
-- Sessions expire in 5 minutes (configurable via `SESSION_TTL_SECONDS`)
-- Single-use via `/consume` + `consumed` flag
+- Sessions expire in 5 minutes (`SESSION_TTL_SECONDS`)
+- Single-use via `/consume`
 - No tokens in URLs
-
-## Local dev
-
-```bash
-npm run dev
-```
-
-Set `LOQUIRA_AUTH_API_BASE` in website/desktop to your `*.workers.dev` URL while testing.

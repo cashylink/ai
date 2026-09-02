@@ -4,7 +4,7 @@
  * Tokens never appear in URL query strings.
  */
 
-import { LOQUIRA_AUTH_ENDPOINTS } from './loquira-auth-api.js';
+import { getAuthApiBase } from './loquira-auth-api.js';
 
 const DESKTOP_DEEP_LINK = 'forge-ai://forge-ai.forge-ai/auth-callback';
 const HANDOFF_TIMEOUT_MS = 12000;
@@ -42,36 +42,40 @@ export async function completeDesktopHandoff(user) {
 
   handoffInFlight = (async () => {
     const idToken = await user.getIdToken(true);
-    let resp;
-    try {
-      resp = await fetchWithTimeout(LOQUIRA_AUTH_ENDPOINTS.complete, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          state: params.state,
-          idToken,
-        }),
-      });
-    } catch (_) {
-      throw new Error('WORKER_NOT_REACHABLE');
-    }
-
-    if (!resp.ok) {
-      let detail = 'HANDOFF_FAILED';
+    const apiBases = [
+      getAuthApiBase(),
+      'https://loquira-auth.alkaptin2030.workers.dev/auth/desktop',
+    ];
+    let lastError = null;
+    for (const apiBase of apiBases) {
       try {
-        const err = await resp.json();
-        detail = err.error || detail;
-      } catch (_) { /* ignore */ }
-      if (detail === 'invalid_state' || detail === 'expired') {
-        throw new Error('SESSION_EXPIRED');
+        const resp = await fetchWithTimeout(`${apiBase}/complete`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ state: params.state, idToken }),
+        });
+        if (!resp.ok) {
+          let detail = 'HANDOFF_FAILED';
+          try {
+            const err = await resp.json();
+            detail = err.error || detail;
+          } catch (_) { /* ignore */ }
+          if (detail === 'invalid_state' || detail === 'expired') {
+            throw new Error('SESSION_EXPIRED');
+          }
+          lastError = new Error(detail);
+          continue;
+        }
+        handoffCompleted = true;
+        const successUrl = `desktop-auth-success.html?state=${encodeURIComponent(params.state)}`;
+        window.location.replace(successUrl);
+        return true;
+      } catch (e) {
+        lastError = e;
       }
-      throw new Error(detail);
     }
-
-    handoffCompleted = true;
-    const successUrl = `desktop-auth-success.html?state=${encodeURIComponent(params.state)}`;
-    window.location.replace(successUrl);
-    return true;
+    if (lastError?.message === 'SESSION_EXPIRED') throw lastError;
+    throw lastError || new Error('WORKER_NOT_REACHABLE');
   })();
 
   try {

@@ -1,9 +1,16 @@
 /**
  * LOQUIRA hosted auth API (Cloudflare Worker).
- * Website + Desktop use HTTPS only — no localhost handoff.
+ * Production: https://api.lokiara.com/auth/desktop
+ * Fallback (active until api DNS route is attached): workers.dev
  */
+export const LOQUIRA_AUTH_API_BASE = 'https://api.lokiara.com/auth/desktop';
 
-export const LOQUIRA_AUTH_API_BASE = 'https://www.lokiara.com/api/auth/desktop';
+/** workers.dev endpoint — used when custom domain route is not yet attached */
+export const LOQUIRA_AUTH_API_FALLBACK = 'https://loquira-auth.alkaptin2030.workers.dev/auth/desktop';
+
+export function getAuthApiBase() {
+  return LOQUIRA_AUTH_API_BASE;
+}
 
 export const LOQUIRA_AUTH_ENDPOINTS = Object.freeze({
   start: `${LOQUIRA_AUTH_API_BASE}/start`,

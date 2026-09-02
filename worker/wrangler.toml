@@ -1,24 +1,22 @@
 name = "loquira-auth"
 main = "src/index.js"
 compatibility_date = "2024-09-01"
+workers_dev = true
 
-# Route: attach in Cloudflare dashboard or uncomment when zone is on Cloudflare:
-# routes = [{ pattern = "www.lokiara.com/api/auth/desktop/*", zone_name = "lokiara.com" }]
-# Alternative API subdomain:
-# routes = [{ pattern = "api.lokiara.com/auth/desktop/*", zone_name = "lokiara.com" }]
+# Enable after lokiara.com zone is on Cloudflare account alkaptin2030@gmail.com:
+# routes = [{ pattern = "api.lokiara.com/*", zone_name = "lokiara.com" }]
 
 [[kv_namespaces]]
 binding = "DESKTOP_AUTH"
-# Create with: wrangler kv namespace create DESKTOP_AUTH
-# Then paste the id below before deploy:
-id = "REPLACE_WITH_KV_NAMESPACE_ID"
-preview_id = "REPLACE_WITH_KV_PREVIEW_ID"
+id = "48f47374c2e04f779e2f5a10aa5b4046"
+preview_id = "2090c96cf84646b7b2c4a9a37e784860"
 
 [vars]
 FIREBASE_PROJECT_ID = "aiprogekt-155e1"
 FIREBASE_API_KEY = "AIzaSyAZiqyuhQ_dmE6HCByrgMrID5yZhjNOYsw"
 LOQUIRA_WEB_LOGIN_URL = "https://www.lokiara.com/login.html"
 SESSION_TTL_SECONDS = "300"
+LOQUIRA_AUTH_API_PUBLIC_URL = "https://api.lokiara.com/auth/desktop"
 
 # Set secrets (never commit):
 # wrangler secret put FIREBASE_CLIENT_EMAIL
